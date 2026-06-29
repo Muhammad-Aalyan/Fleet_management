@@ -1,10 +1,25 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { ConfigModule } from '@nestjs/config';
+import { PrismaModule } from './prisma/prisma.module';
+import { AuthModule } from './auth/auth.module';
+import { DriversModule } from './drivers/drivers.module';
+import { VehiclesModule } from './vehicles/vehicles.module';
+import { RidesModule } from './rides/rides.module';
+import { FuelModule } from './fuel/fuel.module';
+import { MileageModule } from './mileage/mileage.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule,
+    AuthModule,
+    DriversModule,
+    VehiclesModule,
+    RidesModule,
+    FuelModule,
+    MileageModule,
+    DashboardModule,
+  ],
 })
 export class AppModule {}
