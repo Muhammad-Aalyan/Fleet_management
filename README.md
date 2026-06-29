@@ -51,14 +51,14 @@ cd backend
 cp .env.example .env        # update DATABASE_URL
 npm install
 npx prisma migrate dev
-npm run start:dev
+npm run start:dev            # http://localhost:3003
 ```
 
 ### Frontend Portals
 ```bash
-cd admin-portal && npm start     # http://localhost:3001
-cd driver-portal && npm start    # http://localhost:3002
-cd customer-portal && npm start  # http://localhost:3003
+cd admin-portal && npm run dev     # http://localhost:3004
+cd driver-portal && npm run dev    # http://localhost:3005
+cd customer-portal && npm run dev  # http://localhost:3006
 ```
 
 ## Modules
