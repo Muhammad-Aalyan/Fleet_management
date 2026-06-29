@@ -1,0 +1,231 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  DRIVER
+  CUSTOMER
+}
+
+enum RideStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  IN_RIDE
+  MAINTENANCE
+  INACTIVE
+}
+
+enum StuckReason {
+  FLAT_TIRE
+  ACCIDENT
+  TRAFFIC
+  BREAKDOWN
+  OTHER
+}
+
+// ─── Users & Auth ────────────────────────────────────────────────────────────
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      Role
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customer      Customer?
+  driver        Driver?
+  notifications Notification[]
+}
+
+// ─── Customer ────────────────────────────────────────────────────────────────
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  name      String
+  phone     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id])
+  rideRequests RideRequest[]
+}
+
+// ─── Driver ──────────────────────────────────────────────────────────────────
+
+model Driver {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @unique
+  name            String
+  cnic            String   @unique
+  phone           String
+  licenseNumber   String   @unique
+  licenseExpiry   DateTime
+  status          String   @default("AVAILABLE")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User              @relation(fields: [userId], references: [id])
+  vehicleId       Int?
+  vehicle         Vehicle?          @relation(fields: [vehicleId], references: [id])
+  rideAssignments RideAssignment[]
+  fuelLogs        FuelLog[]
+  mileageLogs     MileageLog[]
+  stuckAlerts     StuckAlert[]
+}
+
+// ─── Vehicle ─────────────────────────────────────────────────────────────────
+
+model Vehicle {
+  id              Int           @id @default(autoincrement())
+  vehicleNumber   String        @unique
+  model           String
+  year            Int
+  capacity        Int
+  fuelType        String
+  currentMileage  Float         @default(0)
+  status          VehicleStatus @default(AVAILABLE)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  drivers         Driver[]
+  rideAssignments RideAssignment[]
+  maintenanceLogs VehicleMaintenance[]
+}
+
+// ─── Ride Request ────────────────────────────────────────────────────────────
+
+model RideRequest {
+  id               Int        @id @default(autoincrement())
+  customerId       Int
+  pickupLocation   String
+  dropLocation     String
+  scheduledDate    DateTime
+  scheduledTime    String
+  passengers       Int
+  purpose          String?
+  remarks          String?
+  status           RideStatus @default(PENDING)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  customer         Customer         @relation(fields: [customerId], references: [id])
+  assignment       RideAssignment?
+  statusHistory    RideStatusHistory[]
+}
+
+// ─── Ride Assignment ─────────────────────────────────────────────────────────
+
+model RideAssignment {
+  id            Int      @id @default(autoincrement())
+  rideRequestId Int      @unique
+  driverId      Int
+  vehicleId     Int
+  assignedAt    DateTime @default(now())
+  startedAt     DateTime?
+  completedAt   DateTime?
+
+  rideRequest   RideRequest @relation(fields: [rideRequestId], references: [id])
+  driver        Driver      @relation(fields: [driverId], references: [id])
+  vehicle       Vehicle     @relation(fields: [vehicleId], references: [id])
+}
+
+// ─── Ride Status History ─────────────────────────────────────────────────────
+
+model RideStatusHistory {
+  id            Int        @id @default(autoincrement())
+  rideRequestId Int
+  status        RideStatus
+  changedAt     DateTime   @default(now())
+  changedBy     Int
+
+  rideRequest   RideRequest @relation(fields: [rideRequestId], references: [id])
+}
+
+// ─── Fuel Log ────────────────────────────────────────────────────────────────
+
+model FuelLog {
+  id              Int      @id @default(autoincrement())
+  driverId        Int
+  vehicleId       Int?
+  liters          Float
+  amount          Float
+  currentMileage  Float
+  receiptPhotoUrl String?
+  createdAt       DateTime @default(now())
+
+  driver          Driver   @relation(fields: [driverId], references: [id])
+}
+
+// ─── Mileage Log ─────────────────────────────────────────────────────────────
+
+model MileageLog {
+  id              Int      @id @default(autoincrement())
+  driverId        Int
+  vehicleId       Int?
+  startMileage    Float
+  endMileage      Float
+  photoUrl        String?
+  rideRequestId   Int?
+  createdAt       DateTime @default(now())
+
+  driver          Driver   @relation(fields: [driverId], references: [id])
+}
+
+// ─── Stuck Alert ─────────────────────────────────────────────────────────────
+
+model StuckAlert {
+  id          Int         @id @default(autoincrement())
+  driverId    Int
+  reason      StuckReason
+  description String?
+  resolved    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+
+  driver      Driver      @relation(fields: [driverId], references: [id])
+}
+
+// ─── Notification ────────────────────────────────────────────────────────────
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+// ─── Vehicle Maintenance ─────────────────────────────────────────────────────
+
+model VehicleMaintenance {
+  id          Int      @id @default(autoincrement())
+  vehicleId   Int
+  description String
+  cost        Float?
+  date        DateTime
+  createdAt   DateTime @default(now())
+
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id])
+}
