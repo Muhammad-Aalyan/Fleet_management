@@ -101,6 +101,7 @@ model RideRequest {
   customer      Customer            @relation(fields: [customerId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   assignment    RideAssignment?
   statusHistory RideStatusHistory[]
+  mileageLogs   MileageLog[]
 }
 
 // ─── Ride Assignment ─────────────────────────────────────────────────────────
@@ -158,7 +159,8 @@ model MileageLog {
   rideRequestId Int?
   createdAt     DateTime @default(now())
 
-  driver Driver @relation(fields: [driverId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  driver      Driver       @relation(fields: [driverId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  rideRequest RideRequest? @relation(fields: [rideRequestId], references: [id], onUpdate: NoAction, onDelete: NoAction)
 }
 
 // ─── Stuck Alert ─────────────────────────────────────────────────────────────

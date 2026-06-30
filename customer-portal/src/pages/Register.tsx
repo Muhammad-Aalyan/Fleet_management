@@ -14,8 +14,8 @@ export default function Register() {
   const onFinish = async (values: any) => {
     try {
       const res = await api.post('/auth/register', { ...values, role: 'CUSTOMER' })
-      const { access_token, user } = res.data
-      login(access_token, user)
+      const { token, user } = res.data
+      login(token, user)
       message.success('Account created! Welcome aboard.')
       navigate('/home')
     } catch (err: any) {

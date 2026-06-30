@@ -1,60 +1,115 @@
-import { Table, Card, Button, Form, InputNumber, Input, Modal, Typography, message } from 'antd'
-import { useState } from 'react'
-import { PlusOutlined } from '@ant-design/icons'
+import { Table, Card, Typography, message, Spin, Tag } from 'antd'
+import { useEffect, useState, useCallback } from 'react'
+import { ArrowRightOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons'
+import api from '../api/axios'
 
-const { Title } = Typography
+const { Title, Text } = Typography
 
-const initialData = [
-  { key: 1, start: 44900, end: 45200, distance: 300, date: '2026-06-29' },
-  { key: 2, start: 44600, end: 44900, distance: 300, date: '2026-06-28' },
-]
+interface MileageEntry {
+  id: number
+  startMileage: number
+  endMileage: number
+  createdAt: string
+  pickupLocation?: string
+  dropLocation?: string
+  scheduledDate?: string
+  customers?: { name: string; passengers: number }[]
+}
 
 export default function MileageLog() {
-  const [data, setData] = useState(initialData)
-  const [open, setOpen] = useState(false)
-  const [form] = Form.useForm()
+  const [data, setData] = useState<MileageEntry[]>([])
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (values: { start: number; end: number }) => {
-    const distance = values.end - values.start
-    if (distance <= 0) { message.error('End mileage must be greater than start'); return }
-    setData(prev => [...prev, { key: prev.length + 1, ...values, distance, date: new Date().toISOString().split('T')[0] }])
-    form.resetFields()
-    setOpen(false)
-    message.success('Mileage log added!')
-  }
+  const fetchLogs = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await api.get('/mileage/my')
+      setData(res.data)
+    } catch { message.error('Failed to load mileage logs') }
+    finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => { fetchLogs() }, [fetchLogs])
 
   const columns = [
-    { title: 'Start (km)', dataIndex: 'start', key: 'start', render: (v: number) => v.toLocaleString() },
-    { title: 'End (km)', dataIndex: 'end', key: 'end', render: (v: number) => v.toLocaleString() },
-    { title: 'Distance', dataIndex: 'distance', key: 'distance', render: (v: number) => `${v} km` },
-    { title: 'Date', dataIndex: 'date', key: 'date' },
+    {
+      title: 'Route',
+      key: 'route',
+      render: (_: any, r: MileageEntry) => r.pickupLocation ? (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <strong>{r.pickupLocation}</strong>
+          <ArrowRightOutlined style={{ color: '#f97316', fontSize: 11 }} />
+          <strong>{r.dropLocation}</strong>
+        </span>
+      ) : <Text type="secondary">—</Text>,
+    },
+    {
+      title: 'Customer(s)',
+      key: 'customers',
+      render: (_: any, r: MileageEntry) => {
+        if (!r.customers || r.customers.length === 0) return <Text type="secondary">—</Text>
+        const shared = r.customers.length > 1
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {shared && <Tag color="orange" icon={<TeamOutlined />} style={{ marginBottom: 4, width: 'fit-content' }}>Shared Ride</Tag>}
+            {r.customers.map((c, i) => (
+              <span key={i} style={{ fontSize: 13 }}>
+                <UserOutlined style={{ marginRight: 4, color: '#9ca3af' }} />
+                {c.name} <Text type="secondary">({c.passengers} pax)</Text>
+              </span>
+            ))}
+          </div>
+        )
+      },
+    },
+    {
+      title: 'Start (km)',
+      dataIndex: 'startMileage',
+      key: 'start',
+      render: (v: number) => v.toLocaleString(),
+    },
+    {
+      title: 'End (km)',
+      dataIndex: 'endMileage',
+      key: 'end',
+      render: (v: number, r: MileageEntry) => v === r.startMileage
+        ? <Text type="secondary">Pending</Text>
+        : v.toLocaleString(),
+    },
+    {
+      title: 'Distance',
+      key: 'distance',
+      render: (_: any, r: MileageEntry) => {
+        const d = r.endMileage - r.startMileage
+        return d > 0 ? <Tag color="green">{d.toLocaleString()} km</Tag> : <Text type="secondary">—</Text>
+      },
+    },
+    {
+      title: 'Date',
+      key: 'date',
+      render: (_: any, r: MileageEntry) => new Date(r.createdAt).toLocaleDateString(),
+    },
   ]
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div style={{ marginBottom: 24 }}>
         <Title level={4} style={{ color: '#fff', margin: 0 }}>Mileage Log</Title>
-        <Button type="primary" icon={<PlusOutlined />} style={{ background: '#f97316', border: 'none' }} onClick={() => setOpen(true)}>Add Entry</Button>
+        <Text style={{ color: '#6b7280', fontSize: 13 }}>Auto-filled from ride accept & complete events</Text>
       </div>
 
-      <Card style={{ borderRadius: 12, border: '1px solid #2a2a3f', background: '#1e1e2e' }}>
-        <Table dataSource={data} columns={columns} rowKey="key" size="middle" />
-      </Card>
-
-      <Modal title="Add Mileage Entry" open={open} onCancel={() => setOpen(false)} footer={null}>
-        <Form form={form} layout="vertical" onFinish={handleSubmit} style={{ marginTop: 16 }}>
-          <Form.Item label="Start Mileage (km)" name="start" rules={[{ required: true }]}>
-            <InputNumber min={0} style={{ width: '100%' }} addonAfter="km" />
-          </Form.Item>
-          <Form.Item label="End Mileage (km)" name="end" rules={[{ required: true }]}>
-            <InputNumber min={0} style={{ width: '100%' }} addonAfter="km" />
-          </Form.Item>
-          <Form.Item label="Photo Evidence URL" name="photoUrl">
-            <Input placeholder="Upload link or leave blank" />
-          </Form.Item>
-          <Button htmlType="submit" type="primary" block style={{ background: '#f97316', border: 'none', height: 42 }}>Submit</Button>
-        </Form>
-      </Modal>
+      <Spin spinning={loading}>
+        <Card style={{ borderRadius: 12, border: '1px solid #2a2a3f', background: '#1e1e2e' }}>
+          <Table
+            dataSource={data}
+            columns={columns}
+            rowKey="id"
+            size="middle"
+            pagination={{ pageSize: 10 }}
+            locale={{ emptyText: 'No mileage entries yet. Accept a ride to start logging.' }}
+          />
+        </Card>
+      </Spin>
     </div>
   )
 }

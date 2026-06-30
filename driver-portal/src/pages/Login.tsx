@@ -14,14 +14,14 @@ export default function Login() {
   const onFinish = async (values: { email: string; password: string }) => {
     try {
       const res = await api.post('/auth/login', values)
-      const { access_token, user } = res.data
+      const { token, user } = res.data
       if (user.role !== 'DRIVER') {
         message.error('Access denied. Driver credentials required.')
         return
       }
-      login(access_token, user)
-      message.success('Welcome back, Driver!')
+      login(token, user)
       navigate('/dashboard')
+      message.success(`Welcome back, ${user.name}!`)
     } catch {
       message.error('Invalid email or password')
     }
@@ -31,9 +31,7 @@ export default function Login() {
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #111827 0%, #1f2937 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <Card style={{
         width: 420, borderRadius: 12,
@@ -50,7 +48,6 @@ export default function Login() {
           <Title level={3} style={{ margin: 0, color: '#f9fafb' }}>Driver Portal</Title>
           <Text style={{ color: '#9ca3af' }}>Sign in to your driver account</Text>
         </div>
-
         <Form form={form} layout="vertical" onFinish={onFinish} size="large">
           <Form.Item name="email" rules={[{ required: true, type: 'email', message: 'Enter a valid email' }]}>
             <Input prefix={<UserOutlined />} placeholder="Driver email"
@@ -61,7 +58,8 @@ export default function Login() {
               style={{ background: '#374151', borderColor: '#4b5563', color: '#f9fafb' }} />
           </Form.Item>
           <Form.Item style={{ marginBottom: 0 }}>
-            <Button type="primary" htmlType="submit" block style={{ height: 44, background: '#f97316', borderColor: '#f97316' }}>
+            <Button type="primary" htmlType="submit" block
+              style={{ height: 44, background: '#f97316', borderColor: '#f97316' }}>
               Sign In
             </Button>
           </Form.Item>

@@ -14,14 +14,14 @@ export default function Login() {
   const onFinish = async (values: { email: string; password: string }) => {
     try {
       const res = await api.post('/auth/login', values)
-      const { access_token, user } = res.data
+      const { token, user } = res.data
       if (user.role !== 'ADMIN') {
         message.error('Access denied. Admin credentials required.')
         return
       }
-      login(access_token, user)
-      message.success('Welcome back, Admin!')
+      login(token, user)
       navigate('/dashboard')
+      message.success(`Welcome back, ${user.name}!`)
     } catch {
       message.error('Invalid email or password')
     }
@@ -31,9 +31,7 @@ export default function Login() {
     <div style={{
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #0a1628 0%, #1a3a5c 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <Card style={{ width: 420, borderRadius: 12, boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
@@ -46,7 +44,6 @@ export default function Login() {
           <Title level={3} style={{ margin: 0 }}>Fleet Admin</Title>
           <Text type="secondary">Sign in to your admin account</Text>
         </div>
-
         <Form form={form} layout="vertical" onFinish={onFinish} size="large">
           <Form.Item name="email" rules={[{ required: true, type: 'email', message: 'Enter a valid email' }]}>
             <Input prefix={<UserOutlined />} placeholder="Admin email" />
@@ -55,9 +52,7 @@ export default function Login() {
             <Input.Password prefix={<LockOutlined />} placeholder="Password" />
           </Form.Item>
           <Form.Item style={{ marginBottom: 0 }}>
-            <Button type="primary" htmlType="submit" block style={{ height: 44 }}>
-              Sign In
-            </Button>
+            <Button type="primary" htmlType="submit" block style={{ height: 44 }}>Sign In</Button>
           </Form.Item>
         </Form>
       </Card>

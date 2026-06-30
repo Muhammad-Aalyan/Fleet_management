@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { Layout, Menu, Avatar, Badge, Dropdown, Button, Typography } from 'antd'
+import { Layout, Menu, Avatar, Dropdown, Button, Typography } from 'antd'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import api from '../api/axios'
 import {
   DashboardOutlined, CarOutlined, TeamOutlined, UserOutlined,
   FileTextOutlined, ThunderboltOutlined, BarChartOutlined,
-  BellOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, DollarOutlined,
+  LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, DollarOutlined,
 } from '@ant-design/icons'
+import NotificationBell from '../components/NotificationBell'
 
 const { Sider, Header, Content } = Layout
 const { Text } = Typography
@@ -34,12 +36,28 @@ export default function MainLayout() {
   const location = useLocation()
   const { logout, user } = useAuth()
 
-  const handleUserMenu = ({ key }: { key: string }) => {
-    if (key === 'logout') { logout(); navigate('/login') }
+  const handleLogout = async () => {
+    try { await api.post('/auth/logout') } catch { /* token may be expired */ }
+    logout()
+    navigate('/login')
   }
 
   const userMenuItems = [
-    { key: 'email', label: <Text type="secondary">{user?.email}</Text>, disabled: true },
+    {
+      key: 'info',
+      label: (
+        <div style={{ padding: '4px 0' }}>
+          <div style={{ fontWeight: 600, fontSize: 14 }}>{user?.name ?? 'Admin'}</div>
+          <div style={{ fontSize: 12, color: '#8c8c8c' }}>{user?.email}</div>
+          <div style={{ marginTop: 4 }}>
+            <span style={{ background: '#e6f4ff', color: '#1677ff', fontSize: 11, padding: '1px 8px', borderRadius: 10, fontWeight: 600 }}>
+              {user?.role}
+            </span>
+          </div>
+        </div>
+      ),
+      disabled: true,
+    },
     { type: 'divider' as const },
     { key: 'logout', icon: <LogoutOutlined />, label: 'Logout', danger: true },
   ]
@@ -71,13 +89,14 @@ export default function MainLayout() {
             <span className="page-title">{pageTitles[location.pathname] ?? 'Admin'}</span>
           </div>
           <div className="header-right">
-            <Badge count={0}>
-              <Button type="text" icon={<BellOutlined style={{ fontSize: 18 }} />} shape="circle" />
-            </Badge>
-            <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenu }} placement="bottomRight">
+            <NotificationBell />
+            <Dropdown
+              menu={{ items: userMenuItems, onClick: ({ key }) => key === 'logout' && handleLogout() }}
+              placement="bottomRight"
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                 <Avatar style={{ background: '#1677ff' }} icon={<UserOutlined />} />
-                <Text strong style={{ fontSize: 14 }}>Admin</Text>
+                <Text strong style={{ fontSize: 14 }}>{user?.name ?? 'Admin'}</Text>
               </div>
             </Dropdown>
           </div>
