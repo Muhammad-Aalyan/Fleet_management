@@ -55,7 +55,10 @@ export default function NotificationBell() {
   const handleNotificationClick = async (n: Notification) => {
     if (!n.isRead) await markRead(n.id)
     setOpen(false)
-    navigate('/ride-requests')
+    const t = n.title.toLowerCase()
+    if (t.includes('customer reimbursement') || t.includes('💰')) navigate('/reimbursements/customer')
+    else if (t.includes('driver reimbursement') || t.includes('🔧')) navigate('/reimbursements/driver')
+    else navigate('/ride-requests')
   }
 
   const timeAgo = (date: string) => {
@@ -113,7 +116,7 @@ export default function NotificationBell() {
                 <Text style={{ color: '#6b7280', fontSize: 12, lineHeight: 1.4, display: 'block' }}>{n.message}</Text>
                 {!n.isRead && (
                   <Text style={{ color: '#2563eb', fontSize: 11, fontWeight: 600, marginTop: 4, display: 'block' }}>
-                    Click to view → Ride Requests
+                    Click to view →
                   </Text>
                 )}
               </div>

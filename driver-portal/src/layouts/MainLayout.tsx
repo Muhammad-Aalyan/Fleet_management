@@ -6,7 +6,7 @@ import api from '../api/axios'
 import {
   DashboardOutlined, CarOutlined, FireOutlined, AimOutlined,
   AlertOutlined, UserOutlined, LogoutOutlined,
-  MenuFoldOutlined, MenuUnfoldOutlined,
+  MenuFoldOutlined, MenuUnfoldOutlined, WalletOutlined,
 } from '@ant-design/icons'
 import NotificationBell from '../components/NotificationBell'
 
@@ -14,16 +14,18 @@ const { Sider, Header, Content } = Layout
 const { Text } = Typography
 
 const menuItems = [
-  { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard' },
-  { key: '/my-rides', icon: <CarOutlined />, label: 'My Rides' },
-  { key: '/fuel-log', icon: <FireOutlined />, label: 'Fuel Log' },
-  { key: '/mileage-log', icon: <AimOutlined />, label: 'Mileage Log' },
-  { key: '/emergency', icon: <AlertOutlined />, label: 'Emergency' },
+  { key: '/dashboard',     icon: <DashboardOutlined />, label: 'Dashboard' },
+  { key: '/my-rides',      icon: <CarOutlined />,       label: 'My Rides' },
+  { key: '/fuel-log',      icon: <FireOutlined />,      label: 'Fuel Log' },
+  { key: '/mileage-log',   icon: <AimOutlined />,       label: 'Mileage Log' },
+  { key: '/reimbursement', icon: <WalletOutlined />,    label: 'Reimbursement' },
+  { key: '/emergency',     icon: <AlertOutlined />,     label: 'Emergency' },
 ]
 
 const pageTitles: Record<string, string> = {
   '/dashboard': 'Dashboard', '/my-rides': 'My Rides',
-  '/fuel-log': 'Fuel Log', '/mileage-log': 'Mileage Log', '/emergency': 'Emergency Alert',
+  '/fuel-log': 'Fuel Log', '/mileage-log': 'Mileage Log',
+  '/emergency': 'Emergency Alert', '/reimbursement': 'Reimbursement Claims',
 }
 
 export default function MainLayout() {

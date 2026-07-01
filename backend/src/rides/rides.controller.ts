@@ -94,6 +94,15 @@ export class RidesController {
     return this.svc.assign(id, body.driverId, body.vehicleId, user.id);
   }
 
+  @Post('merge-assign')
+  @Roles('ADMIN')
+  mergeAssign(
+    @Body() body: { rideRequestIds: number[]; driverId: number; vehicleId: number },
+    @CurrentUser() user: { id: number }
+  ) {
+    return this.svc.mergeAssign(body.rideRequestIds, body.driverId, body.vehicleId, user.id);
+  }
+
   @Patch(':id/urgent-assign')
   @Roles('ADMIN')
   urgentAssign(

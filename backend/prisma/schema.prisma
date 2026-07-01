@@ -34,8 +34,9 @@ model Customer {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user         User          @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
-  rideRequests RideRequest[]
+  user           User                    @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  rideRequests   RideRequest[]
+  reimbursements CustomerReimbursement[]
 }
 
 // ─── Driver ──────────────────────────────────────────────────────────────────
@@ -52,13 +53,14 @@ model Driver {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  user            User             @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  user            User                  @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   vehicleId       Int?
-  vehicle         Vehicle?         @relation(fields: [vehicleId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+  vehicle         Vehicle?              @relation(fields: [vehicleId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   rideAssignments RideAssignment[]
   fuelLogs        FuelLog[]
   mileageLogs     MileageLog[]
   stuckAlerts     StuckAlert[]
+  reimbursements  DriverReimbursement[]
 }
 
 // ─── Vehicle ─────────────────────────────────────────────────────────────────
@@ -98,6 +100,8 @@ model RideRequest {
   status         String   @default("PENDING")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  mergeGroupId  String?
 
   customer      Customer            @relation(fields: [customerId], references: [id], onUpdate: NoAction, onDelete: NoAction)
   assignment    RideAssignment?
@@ -192,6 +196,45 @@ model Notification {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+}
+
+// ─── Customer Reimbursement ───────────────────────────────────────────────────
+// Status: PENDING | APPROVED | REJECTED
+
+model CustomerReimbursement {
+  id           Int      @id @default(autoincrement())
+  customerId   Int
+  destination  String
+  travelDate   DateTime
+  purpose      String
+  travelMode   String   // TAXI | BUS | OWN_TRANSPORT | RIDE_SHARE | OTHER
+  amount       Float
+  receiptPhoto String?  @db.NVarChar(Max)
+  notes        String?
+  status       String   @default("PENDING")
+  adminNote    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+}
+
+// ─── Driver Reimbursement ─────────────────────────────────────────────────────
+// Status: PENDING | APPROVED | REJECTED
+
+model DriverReimbursement {
+  id           Int      @id @default(autoincrement())
+  driverId     Int
+  description  String
+  workDone     String
+  amountPaid   Float
+  receiptPhoto String?  @db.NVarChar(Max)
+  status       String   @default("PENDING")
+  adminNote    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  driver Driver @relation(fields: [driverId], references: [id], onUpdate: NoAction, onDelete: NoAction)
 }
 
 // ─── Vehicle Maintenance ─────────────────────────────────────────────────────

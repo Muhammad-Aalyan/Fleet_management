@@ -4,6 +4,7 @@ import { CarOutlined, CheckCircleOutlined, ClockCircleOutlined, ThunderboltOutli
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
+import { buildGroups } from '../utils/rideGrouping'
 
 const { Title, Text } = Typography
 
@@ -15,8 +16,9 @@ interface Ride {
   scheduledDate: string
   scheduledTime: string
   passengers: number
+  mergeGroupId?: string
   customer: { name: string }
-  assignment?: { vehicle: { vehicleNumber: string } } | null
+  assignment?: { driver?: { id: number }; vehicle: { vehicleNumber: string } } | null
 }
 
 export default function Dashboard() {
@@ -45,19 +47,13 @@ export default function Dashboard() {
 
   useEffect(() => { fetchRides() }, [])
 
-  const activeRide = rides.find(r => r.status === 'IN_PROGRESS' || r.status === 'ASSIGNED')
+  // Use the exact same grouping logic as MyRides — single source of truth
+  const allGroups = buildGroups(rides)
+  const activeGroup = allGroups.find(g => g.some(r => r.status === 'IN_PROGRESS' || r.status === 'ASSIGNED')) ?? []
+  const activeRide = activeGroup.find(r => r.status === 'IN_PROGRESS' || r.status === 'ASSIGNED') ?? null
 
-  // Find all rides in the same shared group as the active ride
-  const activeGroup = activeRide
-    ? rides.filter(r =>
-        r.status === activeRide.status &&
-        r.pickupLocation === activeRide.pickupLocation &&
-        r.dropLocation === activeRide.dropLocation &&
-        r.scheduledDate === activeRide.scheduledDate &&
-        r.scheduledTime === activeRide.scheduledTime
-      )
-    : []
   const isSharedGroup = activeGroup.length > 1
+  const isMergedGroup = isSharedGroup && activeGroup.some(r => r.mergeGroupId)
   const totalGroupPax = activeGroup.reduce((s, r) => s + r.passengers, 0)
 
   const todayRides = rides.filter(r => new Date(r.scheduledDate).toDateString() === new Date().toDateString())
@@ -158,7 +154,12 @@ export default function Dashboard() {
                       <Tag color={activeRide.status === 'IN_PROGRESS' ? 'orange' : 'blue'}>
                         {activeRide.status.replace('_', ' ')}
                       </Tag>
-                      {isSharedGroup && (
+                      {isMergedGroup && (
+                        <span style={{ background: '#7c3aed', color: '#fff', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>
+                          🔗 Merged · {activeGroup.length} customers
+                        </span>
+                      )}
+                    {isSharedGroup && !isMergedGroup && (
                         <span style={{ background: '#f97316', color: '#fff', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>
                           Shared · {activeGroup.length} customers
                         </span>
@@ -209,7 +210,10 @@ export default function Dashboard() {
                         </div>
                         <div>
                           <div style={{ color: '#f9fafb', fontWeight: 600, fontSize: 13 }}>{r.customer?.name}</div>
-                          <div style={{ color: '#9ca3af', fontSize: 11 }}>{r.passengers} passenger{r.passengers > 1 ? 's' : ''}</div>
+                          <div style={{ color: '#9ca3af', fontSize: 11 }}>
+                            {r.passengers} pax
+                            {isMergedGroup && <span style={{ color: '#a78bfa', marginLeft: 6 }}>{r.pickupLocation} → {r.dropLocation}</span>}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -222,7 +226,7 @@ export default function Dashboard() {
                       style={{ background: '#f97316', border: 'none', height: 42, fontWeight: 600 }}
                       onClick={() => setEndMileageOpen(true)}
                     >
-                      {isSharedGroup ? `Complete Ride for All ${activeGroup.length} Customers` : 'Complete Ride'} & Record End Mileage
+                      {isSharedGroup ? `Complete ${isMergedGroup ? 'Merged' : 'Shared'} Ride for All ${activeGroup.length} Customers` : 'Complete Ride'} & Record End Mileage
                     </Button>
                   )}
                   {activeRide.status === 'ASSIGNED' && (
@@ -230,7 +234,7 @@ export default function Dashboard() {
                       style={{ background: '#22c55e', borderColor: '#22c55e', height: 42, fontWeight: 600 }}
                       onClick={() => setStartMileageOpen(true)}
                     >
-                      {isSharedGroup ? `Accept All ${activeGroup.length} Rides` : 'Accept Ride'} & Record Start Mileage
+                      {isSharedGroup ? `Accept All ${activeGroup.length} ${isMergedGroup ? 'Merged' : 'Shared'} Rides` : 'Accept Ride'} & Record Start Mileage
                     </Button>
                   )}
                 </div>

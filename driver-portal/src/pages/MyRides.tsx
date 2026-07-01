@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Tag, Button, Card, Typography, Select, Modal, Form, Input, InputNumber, message, Spin, Badge } from 'antd'
 import { CheckOutlined, CloseOutlined, ReloadOutlined, TeamOutlined, UserOutlined, ArrowRightOutlined, DashboardOutlined } from '@ant-design/icons'
 import api from '../api/axios'
+import { groupKey, buildGroups } from '../utils/rideGrouping'
 
 const { Title, Text } = Typography
 const { Option } = Select
@@ -19,14 +20,11 @@ interface Ride {
   scheduledTime: string
   passengers: number
   purpose?: string
+  mergeGroupId?: string
   customer: { name: string; phone: string }
-  assignment?: { vehicle: { vehicleNumber: string; model: string }; completedAt?: string } | null
+  assignment?: { driver?: { id: number }; vehicle: { vehicleNumber: string; model: string }; completedAt?: string } | null
 }
 
-// Key that uniquely identifies a shared ride group
-function groupKey(r: Ride) {
-  return `${r.pickupLocation}|${r.dropLocation}|${r.scheduledDate}|${r.scheduledTime}|${r.status}`
-}
 
 export default function MyRides() {
   const [rides, setRides] = useState<Ride[]>([])
@@ -137,18 +135,8 @@ export default function MyRides() {
     finally { setActionLoading(false) }
   }
 
-  // Group rides: same route + schedule + status → shared ride group
   const filteredRides = rides.filter(r => filter === 'ALL' || r.status === filter)
-
-  const groups: Ride[][] = []
-  const seen = new Set<number>()
-  for (const ride of filteredRides) {
-    if (seen.has(ride.id)) continue
-    const key = groupKey(ride)
-    const group = filteredRides.filter(r => groupKey(r) === key)
-    group.forEach(r => seen.add(r.id))
-    groups.push(group)
-  }
+  const groups = buildGroups(filteredRides)
 
   const isShared = (group: Ride[]) => group.length > 1
 
@@ -183,14 +171,16 @@ export default function MyRides() {
             const shared = isShared(group)
             const totalPax = group.reduce((sum, r) => sum + r.passengers, 0)
 
+            const isMerged = group.some(r => r.mergeGroupId)
+
             return (
               <Card
                 key={group.map(r => r.id).join('-')}
                 style={{
                   borderRadius: 14,
-                  border: shared && rep.status === 'IN_PROGRESS'
+                  border: (shared || isMerged) && rep.status === 'IN_PROGRESS'
                     ? '1.5px solid #f97316'
-                    : '1px solid #2a2a3f',
+                    : isMerged ? '1.5px solid #7c3aed' : '1px solid #2a2a3f',
                   background: '#1e1e2e',
                   overflow: 'hidden',
                 }}
@@ -198,26 +188,37 @@ export default function MyRides() {
               >
                 {/* Header bar */}
                 <div style={{
-                  background: shared ? 'rgba(249,115,22,0.1)' : 'rgba(59,130,246,0.08)',
+                  background: isMerged ? 'rgba(124,58,237,0.1)' : shared ? 'rgba(249,115,22,0.1)' : 'rgba(59,130,246,0.08)',
                   padding: '14px 20px',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   borderBottom: '1px solid #2a2a3f',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    {/* Route */}
                     <div>
-                      <div style={{ color: '#fff', fontWeight: 700, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        {rep.pickupLocation}
-                        <ArrowRightOutlined style={{ color: '#f97316', fontSize: 12 }} />
-                        {rep.dropLocation}
-                      </div>
+                      {isMerged ? (
+                        /* Merged rides may have different routes — show all */
+                        <div style={{ color: '#fff', fontWeight: 700, fontSize: 14 }}>
+                          🔗 Merged Ride — {group.length} customers
+                        </div>
+                      ) : (
+                        <div style={{ color: '#fff', fontWeight: 700, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
+                          {rep.pickupLocation}
+                          <ArrowRightOutlined style={{ color: '#f97316', fontSize: 12 }} />
+                          {rep.dropLocation}
+                        </div>
+                      )}
                       <div style={{ color: '#9ca3af', fontSize: 12, marginTop: 2 }}>
                         {new Date(rep.scheduledDate).toLocaleDateString()} · {rep.scheduledTime}
                       </div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {shared && (
+                    {isMerged && (
+                      <span style={{ background: '#7c3aed', color: '#fff', borderRadius: 20, padding: '2px 10px', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <TeamOutlined /> Merged · {group.length} customers
+                      </span>
+                    )}
+                    {shared && !isMerged && (
                       <Badge
                         count={
                           <span style={{ background: '#f97316', color: '#fff', borderRadius: 20, padding: '2px 10px', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -236,8 +237,8 @@ export default function MyRides() {
                 <div style={{ padding: '12px 20px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                     <div style={{ color: '#6b7280', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {shared ? <TeamOutlined /> : <UserOutlined />}
-                      {shared
+                      {(shared || isMerged) ? <TeamOutlined /> : <UserOutlined />}
+                      {(shared || isMerged)
                         ? `${group.length} customers · ${totalPax} total passenger${totalPax > 1 ? 's' : ''}`
                         : `${totalPax} passenger${totalPax > 1 ? 's' : ''}`}
                     </div>
@@ -272,7 +273,10 @@ export default function MyRides() {
                           </div>
                           <div>
                             <div style={{ color: '#f9fafb', fontWeight: 600, fontSize: 14 }}>{r.customer.name}</div>
-                            <div style={{ color: '#9ca3af', fontSize: 12 }}>{r.customer.phone} · {r.passengers} passenger{r.passengers > 1 ? 's' : ''}</div>
+                            <div style={{ color: '#9ca3af', fontSize: 12 }}>
+                              {r.customer.phone} · {r.passengers} pax
+                              {isMerged && <span style={{ color: '#a78bfa', marginLeft: 6 }}>{r.pickupLocation} → {r.dropLocation}</span>}
+                            </div>
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: 6 }}>
@@ -291,7 +295,7 @@ export default function MyRides() {
                               </Button>
                             </>
                           )}
-                          {r.status === 'ASSIGNED' && idx > 0 && (
+                          {r.status === 'ASSIGNED' && idx > 0 && !isMerged && (
                             <Tag color="blue" style={{ margin: 0 }}>Waiting for accept</Tag>
                           )}
                         </div>
@@ -307,7 +311,7 @@ export default function MyRides() {
                       loading={actionLoading}
                       onClick={() => handleCompleteClick(group[0])}
                     >
-                      {shared ? `Complete Ride for All ${group.length} Passengers` : 'Complete Ride'}
+                      {(shared || isMerged) ? `Complete Ride for All ${group.length} Customers` : 'Complete Ride'}
                     </Button>
                   )}
                 </div>

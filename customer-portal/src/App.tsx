@@ -8,6 +8,7 @@ import Home from './pages/Home'
 import RequestRide from './pages/RequestRide'
 import MyRides from './pages/MyRides'
 import RideHistory from './pages/RideHistory'
+import Reimbursement from './pages/Reimbursement'
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
             <Route path="request-ride" element={<RequestRide />} />
             <Route path="my-rides" element={<MyRides />} />
             <Route path="history" element={<RideHistory />} />
+            <Route path="reimbursement" element={<Reimbursement />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Space, Input, Select, Card, Modal, Form, Descriptions, Typography, message, Spin, Tooltip, Switch, Alert } from 'antd'
-import { SearchOutlined, EyeOutlined, CheckOutlined, CloseOutlined, UserAddOutlined, ReloadOutlined } from '@ant-design/icons'
+import { SearchOutlined, EyeOutlined, CheckOutlined, CloseOutlined, UserAddOutlined, ReloadOutlined, MergeCellsOutlined } from '@ant-design/icons'
 import api from '../api/axios'
 
 const { Title, Text } = Typography
@@ -21,6 +21,7 @@ interface Ride {
   passengers: number
   purpose?: string
   remarks?: string
+  mergeGroupId?: string
   customer: { name: string; phone: string; user: { id: number } }
   assignment?: { driver: { id: number; name: string }; vehicle: { id: number; vehicleNumber: string; model: string } } | null
 }
@@ -36,6 +37,8 @@ export default function RideRequests() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
 
+  const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([])
+
   const [detailRide, setDetailRide] = useState<Ride | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
 
@@ -49,6 +52,11 @@ export default function RideRequests() {
   const [rejectRide, setRejectRide] = useState<Ride | null>(null)
   const [rejectOpen, setRejectOpen] = useState(false)
   const [rejectForm] = Form.useForm()
+
+  // Merge & Assign
+  const [mergeOpen, setMergeOpen] = useState(false)
+  const [mergeForm] = Form.useForm()
+  const [mergeLoading, setMergeLoading] = useState(false)
 
   const fetchRides = useCallback(async () => {
     setLoading(true)
@@ -111,15 +119,50 @@ export default function RideRequests() {
     finally { setAssignLoading(false) }
   }
 
+  const openMergeAssign = async () => {
+    await fetchDriversAndVehicles()
+    setMergeOpen(true)
+  }
+
+  const handleMergeSubmit = async (values: { driverId: number; vehicleId: number }) => {
+    setMergeLoading(true)
+    try {
+      const res = await api.post('/rides/merge-assign', {
+        rideRequestIds: selectedRowKeys,
+        driverId: values.driverId,
+        vehicleId: values.vehicleId,
+      })
+      message.success(`${res.data.assignedRides} rides merged & assigned — driver and customers notified`)
+      setMergeOpen(false)
+      mergeForm.resetFields()
+      setSelectedRowKeys([])
+      fetchRides()
+    } catch (e: any) { message.error(e.response?.data?.message || 'Failed to merge assign') }
+    finally { setMergeLoading(false) }
+  }
+
   const filtered = rides.filter(r =>
     (statusFilter === 'ALL' || r.status === statusFilter) &&
     (r.customer?.name?.toLowerCase().includes(search.toLowerCase()) ||
       r.pickupLocation?.toLowerCase().includes(search.toLowerCase()))
   )
 
+  const selectedRides = rides.filter(r => selectedRowKeys.includes(r.id))
+  const selectedPassengers = selectedRides.reduce((sum, r) => sum + r.passengers, 0)
+  const canMerge = selectedRowKeys.length >= 2 && selectedRides.every(r => ['APPROVED', 'PENDING'].includes(r.status))
+
   const columns = [
     { title: '#', dataIndex: 'id', key: 'id', width: 55 },
-    { title: 'Customer', key: 'customer', render: (_: unknown, r: Ride) => <><div style={{ fontWeight: 600 }}>{r.customer?.name}</div><Text type="secondary" style={{ fontSize: 12 }}>{r.customer?.phone}</Text></> },
+    {
+      title: 'Customer', key: 'customer',
+      render: (_: unknown, r: Ride) => (
+        <div>
+          <div style={{ fontWeight: 600 }}>{r.customer?.name}</div>
+          <Text type="secondary" style={{ fontSize: 12 }}>{r.customer?.phone}</Text>
+          {r.mergeGroupId && <div><Tag color="geekblue" style={{ fontSize: 10, marginTop: 2 }}>🔗 Merged</Tag></div>}
+        </div>
+      ),
+    },
     { title: 'Pickup', dataIndex: 'pickupLocation', key: 'pickup' },
     { title: 'Drop', dataIndex: 'dropLocation', key: 'drop' },
     { title: 'Date', key: 'date', render: (_: unknown, r: Ride) => <><div>{new Date(r.scheduledDate).toLocaleDateString()}</div><Text type="secondary" style={{ fontSize: 12 }}>{r.scheduledTime}</Text></> },
@@ -160,7 +203,24 @@ export default function RideRequests() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <Title level={4} style={{ margin: 0 }}>Ride Requests</Title>
-        <Button icon={<ReloadOutlined />} onClick={fetchRides}>Refresh</Button>
+        <Space>
+          {canMerge && (
+            <Button
+              icon={<MergeCellsOutlined />}
+              type="primary"
+              style={{ background: '#7c3aed', borderColor: '#7c3aed' }}
+              onClick={openMergeAssign}
+            >
+              Merge & Assign ({selectedRowKeys.length} rides · {selectedPassengers} pax)
+            </Button>
+          )}
+          {selectedRowKeys.length > 0 && !canMerge && (
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {selectedRowKeys.length === 1 ? 'Select 1 more ride to merge' : 'Selected rides must be APPROVED or PENDING'}
+            </Text>
+          )}
+          <Button icon={<ReloadOutlined />} onClick={fetchRides}>Refresh</Button>
+        </Space>
       </div>
 
       <Card style={{ borderRadius: 12, marginBottom: 16 }}>
@@ -177,8 +237,20 @@ export default function RideRequests() {
 
       <Card style={{ borderRadius: 12 }}>
         <Spin spinning={loading}>
-          <Table dataSource={filtered} columns={columns} rowKey="id" size="middle"
-            pagination={{ pageSize: 10, showTotal: t => `${t} total` }} />
+          <Table
+            dataSource={filtered}
+            columns={columns}
+            rowKey="id"
+            size="middle"
+            pagination={{ pageSize: 10, showTotal: t => `${t} total` }}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: (keys) => setSelectedRowKeys(keys as number[]),
+              getCheckboxProps: (r: Ride) => ({
+                disabled: !['APPROVED', 'PENDING', 'ASSIGNED'].includes(r.status),
+              }),
+            }}
+          />
         </Spin>
       </Card>
 
@@ -196,6 +268,11 @@ export default function RideRequests() {
             <Descriptions.Item label="Purpose">{detailRide.purpose || '—'}</Descriptions.Item>
             <Descriptions.Item label="Status"><Tag color={statusColors[detailRide.status]}>{detailRide.status}</Tag></Descriptions.Item>
             <Descriptions.Item label="Remarks">{detailRide.remarks || '—'}</Descriptions.Item>
+            {detailRide.mergeGroupId && (
+              <Descriptions.Item label="Merge Group" span={2}>
+                <Tag color="geekblue">🔗 {detailRide.mergeGroupId}</Tag>
+              </Descriptions.Item>
+            )}
             {detailRide.assignment && (
               <>
                 <Descriptions.Item label="Driver">{detailRide.assignment.driver?.name}</Descriptions.Item>
@@ -228,7 +305,6 @@ export default function RideRequests() {
         </Text>
         <Form form={assignForm} layout="vertical" onFinish={(values) => handleAssignSubmit(values, bumpRideIds)}>
           {(() => {
-            // Find IN_PROGRESS rides whose route+schedule matches the ride being assigned
             const matchingActiveRides = rides.filter(r =>
               ['IN_PROGRESS', 'ASSIGNED'].includes(r.status) &&
               r.id !== assignRide?.id &&
@@ -240,18 +316,18 @@ export default function RideRequests() {
             const sharedDriverIds = new Set(matchingActiveRides.map(r => r.assignment?.driver?.id).filter(Boolean))
             const sharedVehicleIds = new Set(matchingActiveRides.map(r => r.assignment?.vehicle?.id).filter(Boolean))
 
-            // Calculate remaining seats on shared vehicles
             const seatsTaken = matchingActiveRides.reduce((sum, r) => sum + r.passengers, 0)
             const newPassengers = assignRide?.passengers ?? 1
 
-            // A shared vehicle is full if adding the new passengers would exceed capacity
+            // Driver takes 1 seat; effective passenger capacity = capacity - 1
+            // Always compute fullVehicleIds with original passenger count so the warning stays visible.
+            // Urgent mode does NOT change this check — it only unlocks the disabled state on the dropdowns.
             const fullVehicleIds = new Set(
               vehicles
-                .filter(v => v.status === 'IN_RIDE' && sharedVehicleIds.has(v.id) && (v.capacity - seatsTaken) < newPassengers)
+                .filter(v => v.status === 'IN_RIDE' && sharedVehicleIds.has(v.id) && ((v.capacity - 1) - seatsTaken) < newPassengers)
                 .map(v => v.id)
             )
 
-            // Drivers on full vehicles are also unavailable for sharing
             const driversOnFullVehicles = new Set(
               matchingActiveRides
                 .filter(r => r.assignment?.vehicle?.id && fullVehicleIds.has(r.assignment.vehicle.id))
@@ -259,7 +335,6 @@ export default function RideRequests() {
                 .filter(Boolean)
             )
 
-            // Show all relevant drivers/vehicles but mark unavailable ones as disabled
             const availableDrivers = drivers.filter(d =>
               d.status === 'AVAILABLE' || (d.status === 'ON_RIDE' && sharedDriverIds.has(d.id))
             )
@@ -268,7 +343,6 @@ export default function RideRequests() {
             )
             const capacityExceeded = fullVehicleIds.size > 0
 
-            // Keep bumpRideIds in sync (rides that are blocking capacity)
             const blockingIds = matchingActiveRides.filter(r => r.assignment?.vehicle?.id && fullVehicleIds.has(r.assignment.vehicle.id)).map(r => r.id)
             if (JSON.stringify(blockingIds) !== JSON.stringify(bumpRideIds)) setBumpRideIds(blockingIds)
 
@@ -285,7 +359,7 @@ export default function RideRequests() {
                     <div style={{ background: '#fff1f0', border: '1px solid #ffa39e', borderRadius: 8, padding: '12px 14px', marginBottom: 12, fontSize: 13 }}>
                       <div style={{ fontWeight: 700, color: '#cf1322', marginBottom: 6 }}>⚠️ Capacity Exceeded</div>
                       <div style={{ color: '#6b7280', marginBottom: 10 }}>
-                        Vehicle is full ({seatsTaken}/{availableVehicles.find(v => fullVehicleIds.has(v.id))?.capacity ?? '?'} seats taken) by the following passenger(s):
+                        Vehicle is full ({seatsTaken}/{(availableVehicles.find(v => fullVehicleIds.has(v.id))?.capacity ?? 1) - 1} passenger seats taken — driver occupies 1 seat):
                       </div>
                       {matchingActiveRides.map(r => (
                         <div key={r.id} style={{ background: '#fff', border: '1px solid #fca5a5', borderRadius: 6, padding: '6px 10px', marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
@@ -295,7 +369,6 @@ export default function RideRequests() {
                       ))}
                     </div>
 
-                    {/* Urgent toggle */}
                     <div style={{ background: urgentMode ? '#fff7ed' : '#f9fafb', border: `1.5px solid ${urgentMode ? '#f97316' : '#e5e7eb'}`, borderRadius: 10, padding: '12px 14px', marginBottom: 16, transition: 'all 0.2s' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: urgentMode ? 10 : 0 }}>
                         <div>
@@ -308,7 +381,7 @@ export default function RideRequests() {
                       </div>
                       {urgentMode && (() => {
                         const fullVeh = availableVehicles.find(v => fullVehicleIds.has(v.id))
-                        const seatsAvailable = (fullVeh?.capacity ?? 0) - seatsTaken
+                        const seatsAvailable = ((fullVeh?.capacity ?? 1) - 1) - seatsTaken // -1 for driver
                         const adjustedPax = Math.min(newPassengers, seatsAvailable)
                         const removed = newPassengers - adjustedPax
                         return (
@@ -334,16 +407,19 @@ export default function RideRequests() {
                   <Select placeholder="Choose driver" size="large">
                     {availableDrivers.map(d => {
                       const isUnavailable = driversOnFullVehicles.has(d.id)
+                      const urgentUnlocked = isUnavailable && urgentMode
                       return (
                         <Option key={d.id} value={d.id} disabled={isUnavailable && !urgentMode}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ color: isUnavailable ? '#9ca3af' : undefined }}>
+                            <span style={{ color: isUnavailable && !urgentMode ? '#9ca3af' : undefined }}>
                               {d.name} — {d.phone}
                             </span>
                             <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                              {isUnavailable && <Tag color="red">Vehicle Full</Tag>}
-                              <Tag color={d.status === 'AVAILABLE' ? 'green' : isUnavailable ? 'default' : 'orange'}>
-                                {d.status === 'AVAILABLE' ? 'Available' : isUnavailable ? 'Unavailable' : 'On Ride (shared)'}
+                              {urgentUnlocked
+                                ? <Tag color="orange">🚨 Urgent</Tag>
+                                : isUnavailable && <Tag color="red">Vehicle Full</Tag>}
+                              <Tag color={d.status === 'AVAILABLE' ? 'green' : urgentUnlocked ? 'orange' : isUnavailable ? 'default' : 'orange'}>
+                                {d.status === 'AVAILABLE' ? 'Available' : urgentUnlocked ? 'On Ride (urgent)' : isUnavailable ? 'Unavailable' : 'On Ride (shared)'}
                               </Tag>
                             </span>
                           </div>
@@ -356,22 +432,28 @@ export default function RideRequests() {
                 <Form.Item name="vehicleId" label="Select Vehicle" rules={[{ required: true, message: 'Select a vehicle' }]}>
                   <Select placeholder="Choose vehicle" size="large">
                     {availableVehicles.map(v => {
-                      const seatsLeft = v.status === 'IN_RIDE' ? v.capacity - seatsTaken : v.capacity
+                      const passengerCap = v.capacity - 1
+                      const seatsLeft = v.status === 'IN_RIDE' ? passengerCap - seatsTaken : passengerCap
                       const isFull = fullVehicleIds.has(v.id)
+                      const urgentUnlockedV = isFull && urgentMode
+                      // When urgent: show adjusted seats that will be used after reduction
+                      const urgentAdjustedPax = Math.min(newPassengers, seatsLeft)
                       return (
                         <Option key={v.id} value={v.id} disabled={isFull && !urgentMode}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ color: isFull ? '#9ca3af' : undefined }}>
+                            <span style={{ color: isFull && !urgentMode ? '#9ca3af' : undefined }}>
                               {v.vehicleNumber} — {v.model}
                             </span>
                             <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                               {v.status === 'IN_RIDE' && (
-                                <Tag color={isFull ? 'red' : 'blue'}>
-                                  {isFull ? `Full (${seatsTaken}/${v.capacity})` : `${seatsLeft} seats left`}
+                                <Tag color={urgentUnlockedV ? 'orange' : isFull ? 'red' : 'blue'}>
+                                  {urgentUnlockedV
+                                    ? `🚨 ${seatsTaken + urgentAdjustedPax}/${passengerCap} after adjust`
+                                    : isFull ? `Full (${seatsTaken}/${passengerCap})` : `${seatsLeft} seats left`}
                                 </Tag>
                               )}
-                              <Tag color={v.status === 'AVAILABLE' ? 'green' : isFull ? 'default' : 'blue'}>
-                                {v.status === 'AVAILABLE' ? `Cap: ${v.capacity}` : isFull ? 'Unavailable' : 'In Ride (shared)'}
+                              <Tag color={v.status === 'AVAILABLE' ? 'green' : urgentUnlockedV ? 'orange' : isFull ? 'default' : 'blue'}>
+                                {v.status === 'AVAILABLE' ? `${passengerCap} pax` : urgentUnlockedV ? 'Urgent (shared)' : isFull ? 'Unavailable' : 'In Ride (shared)'}
                               </Tag>
                             </span>
                           </div>
@@ -383,6 +465,83 @@ export default function RideRequests() {
               </>
             )
           })()}
+        </Form>
+      </Modal>
+
+      {/* Merge & Assign Modal */}
+      <Modal
+        title={<span><MergeCellsOutlined style={{ color: '#7c3aed', marginRight: 8 }} />Merge & Assign Rides</span>}
+        open={mergeOpen}
+        onCancel={() => { setMergeOpen(false); mergeForm.resetFields() }}
+        onOk={() => mergeForm.submit()}
+        okText="Merge & Assign"
+        okButtonProps={{ style: { background: '#7c3aed', borderColor: '#7c3aed' } }}
+        confirmLoading={mergeLoading}
+        width={600}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ background: '#f5f3ff', border: '1px solid #c4b5fd', borderRadius: 10, padding: '12px 16px', marginBottom: 14 }}>
+            <div style={{ fontWeight: 700, color: '#6d28d9', marginBottom: 10, fontSize: 13 }}>
+              🔗 Rides to be merged ({selectedRides.length} rides · {selectedPassengers} total passengers)
+            </div>
+            {selectedRides.map((r, i) => (
+              <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: '1px solid #e5e7eb', borderRadius: 6, padding: '7px 12px', marginBottom: i < selectedRides.length - 1 ? 6 : 0, fontSize: 13 }}>
+                <div>
+                  <span style={{ fontWeight: 600 }}>{r.customer?.name}</span>
+                  <span style={{ color: '#6b7280', marginLeft: 8 }}>{r.pickupLocation} → {r.dropLocation}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <Tag>{r.passengers} pax</Tag>
+                  <Tag color={statusColors[r.status]}>{r.status}</Tag>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Alert
+            type="info"
+            showIcon
+            message={`Total passengers: ${selectedPassengers}. The driver occupies 1 seat — select a vehicle with capacity ≥ ${selectedPassengers + 1} seats.`}
+            style={{ borderRadius: 8, fontSize: 12, marginBottom: 14 }}
+          />
+        </div>
+
+        <Form form={mergeForm} layout="vertical" onFinish={handleMergeSubmit}>
+          <Form.Item name="driverId" label="Assign Driver" rules={[{ required: true, message: 'Select a driver' }]}>
+            <Select placeholder="Choose driver" size="large">
+              {drivers.filter(d => ['AVAILABLE', 'ON_RIDE'].includes(d.status)).map(d => (
+                <Option key={d.id} value={d.id}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>{d.name} — {d.phone}</span>
+                    <Tag color={d.status === 'AVAILABLE' ? 'green' : 'orange'}>
+                      {d.status === 'AVAILABLE' ? 'Available' : 'On Ride'}
+                    </Tag>
+                  </div>
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item name="vehicleId" label="Assign Vehicle" rules={[{ required: true, message: 'Select a vehicle' }]}>
+            <Select placeholder="Choose vehicle" size="large">
+              {vehicles.filter(v => ['AVAILABLE', 'IN_RIDE'].includes(v.status)).map(v => {
+                const paxCap = v.capacity - 1 // driver occupies 1 seat
+                const tooSmall = paxCap < selectedPassengers
+                return (
+                  <Option key={v.id} value={v.id} disabled={tooSmall}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: tooSmall ? '#9ca3af' : undefined }}>
+                        {v.vehicleNumber} — {v.model}
+                      </span>
+                      <Tag color={!tooSmall ? 'green' : 'red'}>
+                        {v.capacity} seats · {paxCap} pax {tooSmall ? '(too small)' : '✓'}
+                      </Tag>
+                    </div>
+                  </Option>
+                )
+              })}
+            </Select>
+          </Form.Item>
         </Form>
       </Modal>
     </div>

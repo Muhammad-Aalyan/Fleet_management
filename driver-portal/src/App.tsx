@@ -8,6 +8,7 @@ import MyRides from './pages/MyRides'
 import FuelLog from './pages/FuelLog'
 import MileageLog from './pages/MileageLog'
 import Emergency from './pages/Emergency'
+import Reimbursement from './pages/Reimbursement'
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
             <Route path="fuel-log" element={<FuelLog />} />
             <Route path="mileage-log" element={<MileageLog />} />
             <Route path="emergency" element={<Emergency />} />
+            <Route path="reimbursement" element={<Reimbursement />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

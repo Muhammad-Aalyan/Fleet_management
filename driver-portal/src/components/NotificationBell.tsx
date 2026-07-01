@@ -55,7 +55,9 @@ export default function NotificationBell() {
   const handleNotificationClick = async (n: Notification) => {
     if (!n.isRead) await markRead(n.id)
     setOpen(false)
-    navigate('/my-rides')
+    const t = n.title.toLowerCase()
+    if (t.includes('reimbursement')) navigate('/reimbursement')
+    else navigate('/my-rides')
   }
 
   const timeAgo = (date: string) => {
@@ -114,7 +116,7 @@ export default function NotificationBell() {
                 <Text style={{ color: '#9ca3af', fontSize: 12, lineHeight: 1.4, display: 'block' }}>{n.message}</Text>
                 {!n.isRead && (
                   <Text style={{ color: '#f97316', fontSize: 11, fontWeight: 600, marginTop: 4, display: 'block' }}>
-                    Click to view → My Rides
+                    {n.title.toLowerCase().includes('reimbursement') ? 'Click to view → Reimbursement' : 'Click to view → My Rides'}
                   </Text>
                 )}
               </div>

@@ -37,15 +37,25 @@ export class MileageService {
         };
       }
 
-      // Find all rides on same route+schedule+driver to collect all customer names (shared ride)
+      // Find all rides on same route+schedule+driver to collect customer names (shared ride).
+      // Only include rides actively assigned to this driver (ASSIGNED/IN_PROGRESS/COMPLETED).
+      // APPROVED/PENDING rides have had their assignment removed or were never properly assigned.
+      const mergeGroupId = (base as any).mergeGroupId as string | null;
       const sharedRides = await this.prisma.rideRequest.findMany({
-        where: {
-          pickupLocation: base.pickupLocation,
-          dropLocation: base.dropLocation,
-          scheduledDate: base.scheduledDate,
-          scheduledTime: base.scheduledTime,
-          assignment: { driverId: driver.id },
-        },
+        where: mergeGroupId
+          ? {
+              mergeGroupId,
+              status: { in: ['ASSIGNED', 'IN_PROGRESS', 'COMPLETED'] },
+              assignment: { driverId: driver.id },
+            } as any
+          : {
+              pickupLocation: base.pickupLocation,
+              dropLocation: base.dropLocation,
+              scheduledDate: base.scheduledDate,
+              scheduledTime: base.scheduledTime,
+              status: { in: ['ASSIGNED', 'IN_PROGRESS', 'COMPLETED'] },
+              assignment: { driverId: driver.id },
+            },
         include: { customer: true },
       });
 

@@ -116,13 +116,16 @@ export class RidesService {
     const vehicle = await this.prisma.vehicle.findUnique({ where: { id: vehicleId } });
     if (!vehicle) throw new NotFoundException('Vehicle not found');
 
-    // How many seats are currently occupied on this vehicle
+    // Driver occupies 1 seat; effective passenger capacity = capacity - 1
+    const passengerCapacity = vehicle.capacity - 1;
+
+    // How many passenger seats are currently occupied on this vehicle
     const agg = await this.prisma.rideRequest.aggregate({
       where: { status: { in: ['IN_PROGRESS', 'ASSIGNED'] }, assignment: { vehicleId } },
       _sum: { passengers: true },
     });
     const seatsTaken = agg._sum.passengers ?? 0;
-    const seatsAvailable = vehicle.capacity - seatsTaken;
+    const seatsAvailable = passengerCapacity - seatsTaken;
 
     const originalPassengers = urgentRide.passengers;
     const adjustedPassengers = Math.min(originalPassengers, seatsAvailable);
@@ -191,7 +194,8 @@ export class RidesService {
         );
       }
 
-      // Check vehicle capacity: sum all ASSIGNED + IN_PROGRESS passengers on this vehicle+schedule
+      // Check vehicle capacity (driver takes 1 seat; effective passenger capacity = capacity - 1)
+      const passengerCapacity = vehicle.capacity - 1;
       const existingPassengers = await this.prisma.rideRequest.aggregate({
         where: {
           status: { in: ['IN_PROGRESS', 'ASSIGNED'] },
@@ -204,9 +208,9 @@ export class RidesService {
         _sum: { passengers: true },
       });
       const totalAfter = (existingPassengers._sum.passengers ?? 0) + ride.passengers;
-      if (totalAfter > vehicle.capacity) {
+      if (totalAfter > passengerCapacity) {
         throw new BadRequestException(
-          `Vehicle capacity exceeded: ${existingPassengers._sum.passengers ?? 0} passengers already aboard, adding ${ride.passengers} would exceed capacity of ${vehicle.capacity}.`
+          `Vehicle capacity exceeded: ${existingPassengers._sum.passengers ?? 0} passengers already aboard, adding ${ride.passengers} would exceed available passenger capacity of ${passengerCapacity} (vehicle seats ${vehicle.capacity}, driver takes 1).`
         );
       }
     }
@@ -250,17 +254,20 @@ export class RidesService {
     const now = new Date();
     const driverId = ride.assignment.driverId;
     const vehicleId = ride.assignment.vehicleId;
+    const mergeGroupId = (ride as any).mergeGroupId as string | null;
 
-    // Find all ASSIGNED rides on the same route+schedule+driver+vehicle (shared ride group)
+    // For merged rides: group by mergeGroupId. For shared rides: group by route+schedule.
     const sharedRides = await this.prisma.rideRequest.findMany({
-      where: {
-        status: 'ASSIGNED',
-        pickupLocation: ride.pickupLocation,
-        dropLocation: ride.dropLocation,
-        scheduledDate: ride.scheduledDate,
-        scheduledTime: ride.scheduledTime,
-        assignment: { driverId, vehicleId },
-      },
+      where: mergeGroupId
+        ? { status: 'ASSIGNED', mergeGroupId } as any
+        : {
+            status: 'ASSIGNED',
+            pickupLocation: ride.pickupLocation,
+            dropLocation: ride.dropLocation,
+            scheduledDate: ride.scheduledDate,
+            scheduledTime: ride.scheduledTime,
+            assignment: { driverId, vehicleId },
+          },
       include: { ...rideInclude },
     });
 
@@ -330,16 +337,20 @@ export class RidesService {
     const driverCheck = await this.prisma.driver.findUnique({ where: { userId } });
     if (!driverCheck || driverCheck.id !== ride.assignment.driverId) throw new ForbiddenException('You are not assigned to this ride');
 
-    // Find all shared rides: same driver + vehicle + pickup + drop + date, still IN_PROGRESS
+    const completeMergeGroupId = (ride as any).mergeGroupId as string | null;
+
+    // For merged rides: group by mergeGroupId. For shared rides: group by route+schedule.
     const sharedRides = await this.prisma.rideRequest.findMany({
-      where: {
-        status: 'IN_PROGRESS',
-        pickupLocation: ride.pickupLocation,
-        dropLocation: ride.dropLocation,
-        scheduledDate: ride.scheduledDate,
-        scheduledTime: ride.scheduledTime,
-        assignment: { driverId: ride.assignment.driverId, vehicleId: ride.assignment.vehicleId },
-      },
+      where: completeMergeGroupId
+        ? { status: 'IN_PROGRESS', mergeGroupId: completeMergeGroupId } as any
+        : {
+            status: 'IN_PROGRESS',
+            pickupLocation: ride.pickupLocation,
+            dropLocation: ride.dropLocation,
+            scheduledDate: ride.scheduledDate,
+            scheduledTime: ride.scheduledTime,
+            assignment: { driverId: ride.assignment.driverId, vehicleId: ride.assignment.vehicleId },
+          },
       include: { ...rideInclude },
     });
 
@@ -370,6 +381,72 @@ export class RidesService {
     ));
 
     return this.findOne(id);
+  }
+
+  // ADMIN: merge multiple ride requests and assign to one driver+vehicle
+  async mergeAssign(rideRequestIds: number[], driverId: number, vehicleId: number, userId: number) {
+    if (rideRequestIds.length < 2) throw new BadRequestException('Select at least 2 rides to merge');
+
+    const driver = await this.prisma.driver.findUnique({ where: { id: driverId }, include: { user: true } });
+    if (!driver) throw new NotFoundException('Driver not found');
+    if (!['AVAILABLE', 'ON_RIDE'].includes(driver.status)) throw new BadRequestException('Driver is not available');
+
+    const vehicle = await this.prisma.vehicle.findUnique({ where: { id: vehicleId } });
+    if (!vehicle) throw new NotFoundException('Vehicle not found');
+    if (!['AVAILABLE', 'IN_RIDE'].includes(vehicle.status)) throw new BadRequestException('Vehicle is not available');
+
+    // Validate all rides exist and are APPROVED
+    const rides = await Promise.all(rideRequestIds.map(id => this.findOne(id)));
+    const invalid = rides.filter(r => !['APPROVED', 'PENDING'].includes(r.status));
+    if (invalid.length > 0) throw new BadRequestException(`Rides ${invalid.map(r => r.id).join(', ')} must be APPROVED or PENDING to merge`);
+
+    // Driver takes 1 seat; effective passenger capacity = capacity - 1
+    const passengerCapacity = vehicle.capacity - 1;
+    const totalPassengers = rides.reduce((sum, r) => sum + r.passengers, 0);
+    if (totalPassengers > passengerCapacity) {
+      throw new BadRequestException(
+        `Cannot merge: total passengers (${totalPassengers}) exceeds available passenger capacity (${passengerCapacity}). Vehicle seats ${vehicle.capacity} but the driver occupies 1 seat.`
+      );
+    }
+
+    // Generate a shared group ID
+    const mergeGroupId = `MRG-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+
+    // Assign all rides to the same driver+vehicle and stamp mergeGroupId
+    await Promise.all(rides.map(async (ride) => {
+      const existing = await this.prisma.rideAssignment.findUnique({ where: { rideRequestId: ride.id } });
+      if (existing) {
+        await this.prisma.rideAssignment.update({ where: { rideRequestId: ride.id }, data: { driverId, vehicleId } });
+      } else {
+        await this.prisma.rideAssignment.create({ data: { rideRequestId: ride.id, driverId, vehicleId } });
+      }
+      await this.prisma.rideRequest.update({
+        where: { id: ride.id },
+        data: { status: 'ASSIGNED', mergeGroupId } as any,
+      });
+      await this.prisma.rideStatusHistory.create({ data: { rideRequestId: ride.id, status: 'ASSIGNED', changedBy: userId } });
+
+      // Notify each customer
+      await this.notify(
+        ride.customer.user.id,
+        'Ride Assigned — Shared Trip',
+        `Your ride (${ride.pickupLocation} → ${ride.dropLocation}) has been assigned to driver ${driver.name}. You are sharing this trip with other passengers.`
+      );
+    }));
+
+    // Update driver and vehicle status
+    await this.prisma.driver.update({ where: { id: driverId }, data: { status: 'ON_RIDE' } });
+    await this.prisma.vehicle.update({ where: { id: vehicleId }, data: { status: 'IN_RIDE' } });
+
+    // Notify driver once with full summary
+    const routeSummary = rides.map(r => `${r.customer.name} (${r.pickupLocation} → ${r.dropLocation})`).join(' | ');
+    await this.notify(
+      driver.user.id,
+      `Merged Ride Assigned — ${rides.length} Passengers`,
+      `You have been assigned a merged ride with ${totalPassengers} total passengers: ${routeSummary}`
+    );
+
+    return { mergeGroupId, assignedRides: rides.length, totalPassengers };
   }
 
   // CUSTOMER/ADMIN: cancel

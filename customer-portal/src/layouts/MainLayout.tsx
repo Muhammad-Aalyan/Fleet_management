@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
 import {
   HomeOutlined, PlusCircleOutlined, CarOutlined, HistoryOutlined,
-  UserOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined,
+  UserOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, WalletOutlined,
 } from '@ant-design/icons'
 import NotificationBell from '../components/NotificationBell'
 
@@ -13,15 +13,17 @@ const { Sider, Header, Content } = Layout
 const { Text } = Typography
 
 const menuItems = [
-  { key: '/home', icon: <HomeOutlined />, label: 'Home' },
-  { key: '/request-ride', icon: <PlusCircleOutlined />, label: 'Request a Ride' },
-  { key: '/my-rides', icon: <CarOutlined />, label: 'My Rides' },
-  { key: '/history', icon: <HistoryOutlined />, label: 'Ride History' },
+  { key: '/home',          icon: <HomeOutlined />,         label: 'Home' },
+  { key: '/request-ride',  icon: <PlusCircleOutlined />,   label: 'Request a Ride' },
+  { key: '/my-rides',      icon: <CarOutlined />,          label: 'My Rides' },
+  { key: '/history',       icon: <HistoryOutlined />,      label: 'Ride History' },
+  { key: '/reimbursement', icon: <WalletOutlined />,       label: 'Reimbursement' },
 ]
 
 const pageTitles: Record<string, string> = {
   '/home': 'Home', '/request-ride': 'Request a Ride',
   '/my-rides': 'My Rides', '/history': 'Ride History',
+  '/reimbursement': 'Reimbursement Claims',
 }
 
 export default function MainLayout() {

@@ -11,6 +11,8 @@ import Customers from './pages/Customers'
 import ActiveRides from './pages/ActiveRides'
 import FuelRecords from './pages/FuelRecords'
 import Reports from './pages/Reports'
+import CustomerReimbursements from './pages/CustomerReimbursements'
+import DriverReimbursements from './pages/DriverReimbursements'
 
 export default function App() {
   return (
@@ -28,6 +30,8 @@ export default function App() {
             <Route path="active-rides" element={<ActiveRides />} />
             <Route path="fuel-records" element={<FuelRecords />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="reimbursements/customer" element={<CustomerReimbursements />} />
+            <Route path="reimbursements/driver" element={<DriverReimbursements />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
