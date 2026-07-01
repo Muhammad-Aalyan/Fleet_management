@@ -9,6 +9,7 @@ import {
   LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, DollarOutlined,
 } from '@ant-design/icons'
 import NotificationBell from '../components/NotificationBell'
+import EmergencyBanner from '../components/EmergencyBanner'
 
 const { Sider, Header, Content } = Layout
 const { Text } = Typography
@@ -102,6 +103,7 @@ export default function MainLayout() {
           </div>
         </Header>
 
+        <EmergencyBanner />
         <Content className="page-content">
           <Outlet />
         </Content>

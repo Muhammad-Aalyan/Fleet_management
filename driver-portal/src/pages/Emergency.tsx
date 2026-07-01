@@ -1,20 +1,38 @@
 import { Card, Button, Select, Input, Typography, Alert, message } from 'antd'
 import { useState } from 'react'
 import { AlertOutlined } from '@ant-design/icons'
+import api from '../api/axios'
 
 const { Title, Text } = Typography
 const { Option } = Select
 const { TextArea } = Input
 
+const reasons = [
+  { value: 'FLAT_TIRE',  label: 'Flat Tire' },
+  { value: 'ACCIDENT',   label: 'Accident' },
+  { value: 'TRAFFIC',    label: 'Heavy Traffic' },
+  { value: 'BREAKDOWN',  label: 'Vehicle Breakdown' },
+  { value: 'OTHER',      label: 'Other' },
+]
+
 export default function Emergency() {
   const [reason, setReason] = useState('')
   const [desc, setDesc] = useState('')
   const [sent, setSent] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const handleAlert = () => {
+  const handleAlert = async () => {
     if (!reason) { message.error('Please select a reason'); return }
-    setSent(true)
-    message.success('🚨 Emergency alert sent to admin!')
+    setLoading(true)
+    try {
+      await api.post('/alerts', { reason, description: desc || undefined })
+      setSent(true)
+      setReason('')
+      setDesc('')
+      message.success('🚨 Emergency alert sent to admin!')
+    } catch (e: any) {
+      message.error(e.response?.data?.message || 'Failed to send alert')
+    } finally { setLoading(false) }
   }
 
   return (
@@ -26,8 +44,8 @@ export default function Emergency() {
 
       {sent && (
         <Alert
-          message="Alert Sent!"
-          description="Your emergency alert has been sent to admin. Help is on the way."
+          message="Alert Sent to Admin!"
+          description="Your emergency alert has been received. Admin has been notified immediately."
           type="success"
           showIcon
           style={{ marginBottom: 24, borderRadius: 10 }}
@@ -38,7 +56,11 @@ export default function Emergency() {
 
       <Card style={{ borderRadius: 12, border: '2px solid rgba(239,68,68,0.4)', background: '#1e1e2e' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(239,68,68,0.1)', border: '2px solid rgba(239,68,68,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <div style={{
+            width: 80, height: 80, borderRadius: '50%',
+            background: 'rgba(239,68,68,0.1)', border: '2px solid rgba(239,68,68,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px',
+          }}>
             <AlertOutlined style={{ fontSize: 36, color: '#ef4444' }} />
           </div>
           <Title level={4} style={{ color: '#fff', margin: 0 }}>Vehicle Stuck Alert</Title>
@@ -47,11 +69,7 @@ export default function Emergency() {
         <div style={{ marginBottom: 16 }}>
           <Text style={{ color: '#aaa', display: 'block', marginBottom: 8 }}>Reason *</Text>
           <Select placeholder="Select reason" style={{ width: '100%' }} value={reason || undefined} onChange={setReason} size="large">
-            <Option value="FLAT_TIRE">Flat Tire</Option>
-            <Option value="ACCIDENT">Accident</Option>
-            <Option value="TRAFFIC">Heavy Traffic</Option>
-            <Option value="BREAKDOWN">Vehicle Breakdown</Option>
-            <Option value="OTHER">Other</Option>
+            {reasons.map(r => <Option key={r.value} value={r.value}>{r.label}</Option>)}
           </Select>
         </div>
 
@@ -61,9 +79,8 @@ export default function Emergency() {
         </div>
 
         <Button
-          block
-          size="large"
-          icon={<AlertOutlined />}
+          block size="large" icon={<AlertOutlined />}
+          loading={loading}
           onClick={handleAlert}
           style={{ background: '#ef4444', border: 'none', color: '#fff', height: 50, fontSize: 16, fontWeight: 600, borderRadius: 10 }}
         >

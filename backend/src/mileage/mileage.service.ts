@@ -24,7 +24,18 @@ export class MileageService {
 
     const enriched = await Promise.all(logs.map(async (log) => {
       const base = log.rideRequest;
-      if (!base) return { ...log, customers: [], pickupLocation: null, dropLocation: null, scheduledDate: null };
+
+      // Non-ride manual entry
+      if (!base) {
+        return {
+          ...log,
+          customers: [{ name: driver.name, passengers: null }],
+          pickupLocation: 'Others',
+          dropLocation: null,
+          scheduledDate: null,
+          isManual: true,
+        };
+      }
 
       // Find all rides on same route+schedule+driver to collect all customer names (shared ride)
       const sharedRides = await this.prisma.rideRequest.findMany({
@@ -44,6 +55,7 @@ export class MileageService {
         dropLocation: base.dropLocation,
         scheduledDate: base.scheduledDate,
         customers: sharedRides.map(r => ({ name: r.customer.name, passengers: r.passengers })),
+        isManual: false,
       };
     }));
 
@@ -56,7 +68,7 @@ export class MileageService {
     return this.prisma.mileageLog.findFirst({ where: { rideRequestId, driverId: driver.id } });
   }
 
-  async create(userId: number, data: { startMileage: number; endMileage: number; photoUrl?: string; rideRequestId?: number }) {
+  async create(userId: number, data: { startMileage: number; endMileage: number; photoUrl?: string; rideRequestId?: number; reason?: string }) {
     const driver = await this.prisma.driver.findUnique({ where: { userId } });
     if (!driver) throw new ForbiddenException('Driver not found');
     return this.prisma.mileageLog.create({ data: { driverId: driver.id, vehicleId: driver.vehicleId, ...data } });

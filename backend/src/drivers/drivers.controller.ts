@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { DriversService } from './drivers.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -21,6 +21,10 @@ export class DriversController {
   @Get(':id')
   @Roles('ADMIN')
   findOne(@Param('id', ParseIntPipe) id: number) { return this.svc.findOne(id); }
+
+  @Post()
+  @Roles('ADMIN')
+  create(@Body() body: any) { return this.svc.create(body); }
 
   @Patch(':id')
   @Roles('ADMIN')

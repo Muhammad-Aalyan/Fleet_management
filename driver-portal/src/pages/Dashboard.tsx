@@ -46,6 +46,20 @@ export default function Dashboard() {
   useEffect(() => { fetchRides() }, [])
 
   const activeRide = rides.find(r => r.status === 'IN_PROGRESS' || r.status === 'ASSIGNED')
+
+  // Find all rides in the same shared group as the active ride
+  const activeGroup = activeRide
+    ? rides.filter(r =>
+        r.status === activeRide.status &&
+        r.pickupLocation === activeRide.pickupLocation &&
+        r.dropLocation === activeRide.dropLocation &&
+        r.scheduledDate === activeRide.scheduledDate &&
+        r.scheduledTime === activeRide.scheduledTime
+      )
+    : []
+  const isSharedGroup = activeGroup.length > 1
+  const totalGroupPax = activeGroup.reduce((s, r) => s + r.passengers, 0)
+
   const todayRides = rides.filter(r => new Date(r.scheduledDate).toDateString() === new Date().toDateString())
   const completed = rides.filter(r => r.status === 'COMPLETED').length
   const pending = rides.filter(r => r.status === 'ASSIGNED').length
@@ -137,46 +151,86 @@ export default function Dashboard() {
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                 />
               ) : (
-                <div style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 10, padding: 20 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <Tag color={activeRide.status === 'IN_PROGRESS' ? 'orange' : 'blue'} style={{ marginBottom: 12 }}>
+                <div style={{ background: 'rgba(249,115,22,0.08)', border: `1.5px solid ${isSharedGroup ? '#f97316' : 'rgba(249,115,22,0.3)'}`, borderRadius: 10, padding: 20 }}>
+                  {/* Header row */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Tag color={activeRide.status === 'IN_PROGRESS' ? 'orange' : 'blue'}>
                         {activeRide.status.replace('_', ' ')}
                       </Tag>
-                      <div style={{ color: '#fff', fontWeight: 600, fontSize: 16, marginBottom: 4 }}>{activeRide.customer?.name}</div>
-                      <div style={{ color: '#aaa', fontSize: 13 }}>{activeRide.passengers} Passenger{activeRide.passengers > 1 ? 's' : ''}</div>
+                      {isSharedGroup && (
+                        <span style={{ background: '#f97316', color: '#fff', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>
+                          Shared · {activeGroup.length} customers
+                        </span>
+                      )}
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ color: '#888', fontSize: 12 }}>Vehicle</div>
-                      <div style={{ color: '#f97316', fontWeight: 700 }}>{activeRide.assignment?.vehicle?.vehicleNumber ?? '—'}</div>
+                      <div style={{ color: '#888', fontSize: 11 }}>Vehicle</div>
+                      <div style={{ color: '#f97316', fontWeight: 700, fontSize: 14 }}>{activeRide.assignment?.vehicle?.vehicleNumber ?? '—'}</div>
                     </div>
                   </div>
-                  <Divider style={{ borderColor: 'rgba(249,115,22,0.2)', margin: '16px 0' }} />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+
+                  {/* Route */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ color: '#888', fontSize: 12, marginBottom: 4 }}>FROM</div>
-                      <div style={{ color: '#fff', fontWeight: 500 }}>{activeRide.pickupLocation}</div>
+                      <div style={{ color: '#888', fontSize: 11, marginBottom: 2 }}>FROM</div>
+                      <div style={{ color: '#fff', fontWeight: 600 }}>{activeRide.pickupLocation}</div>
                     </div>
-                    <ArrowRightOutlined style={{ color: '#f97316', fontSize: 18 }} />
+                    <ArrowRightOutlined style={{ color: '#f97316', fontSize: 16 }} />
                     <div style={{ flex: 1, textAlign: 'right' }}>
-                      <div style={{ color: '#888', fontSize: 12, marginBottom: 4 }}>TO</div>
-                      <div style={{ color: '#fff', fontWeight: 500 }}>{activeRide.dropLocation}</div>
+                      <div style={{ color: '#888', fontSize: 11, marginBottom: 2 }}>TO</div>
+                      <div style={{ color: '#fff', fontWeight: 600 }}>{activeRide.dropLocation}</div>
                     </div>
                   </div>
+
+                  {/* Passenger summary */}
+                  <div style={{ color: '#9ca3af', fontSize: 12, marginBottom: 10 }}>
+                    {isSharedGroup
+                      ? `${activeGroup.length} customers · ${totalGroupPax} total passenger${totalGroupPax > 1 ? 's' : ''}`
+                      : `${activeRide.passengers} passenger${activeRide.passengers > 1 ? 's' : ''}`}
+                  </div>
+
+                  {/* Customer list */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+                    {activeGroup.map((r, idx) => (
+                      <div key={r.id} style={{
+                        background: 'rgba(255,255,255,0.05)',
+                        border: '1px solid rgba(249,115,22,0.2)',
+                        borderRadius: 8, padding: '8px 12px',
+                        display: 'flex', alignItems: 'center', gap: 10,
+                      }}>
+                        <div style={{
+                          width: 28, height: 28, borderRadius: '50%',
+                          background: isSharedGroup ? `hsl(${(idx * 60) % 360}, 70%, 45%)` : '#f97316',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: '#fff', fontWeight: 700, fontSize: 12, flexShrink: 0,
+                        }}>
+                          {r.customer?.name?.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ color: '#f9fafb', fontWeight: 600, fontSize: 13 }}>{r.customer?.name}</div>
+                          <div style={{ color: '#9ca3af', fontSize: 11 }}>{r.passengers} passenger{r.passengers > 1 ? 's' : ''}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Divider style={{ borderColor: 'rgba(249,115,22,0.2)', margin: '0 0 14px' }} />
+
                   {activeRide.status === 'IN_PROGRESS' && (
                     <Button type="primary" block icon={<DashboardOutlined />}
-                      style={{ marginTop: 16, background: '#f97316', border: 'none', height: 42 }}
+                      style={{ background: '#f97316', border: 'none', height: 42, fontWeight: 600 }}
                       onClick={() => setEndMileageOpen(true)}
                     >
-                      Complete Ride & Record End Mileage
+                      {isSharedGroup ? `Complete Ride for All ${activeGroup.length} Customers` : 'Complete Ride'} & Record End Mileage
                     </Button>
                   )}
                   {activeRide.status === 'ASSIGNED' && (
                     <Button type="primary" block icon={<DashboardOutlined />}
-                      style={{ marginTop: 16, background: '#22c55e', borderColor: '#22c55e', height: 42 }}
+                      style={{ background: '#22c55e', borderColor: '#22c55e', height: 42, fontWeight: 600 }}
                       onClick={() => setStartMileageOpen(true)}
                     >
-                      Accept Ride & Record Start Mileage
+                      {isSharedGroup ? `Accept All ${activeGroup.length} Rides` : 'Accept Ride'} & Record Start Mileage
                     </Button>
                   )}
                 </div>
@@ -215,7 +269,9 @@ export default function Dashboard() {
         {activeRide && (
           <div style={{ background: '#f9fafb', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#374151' }}>
             <strong>{activeRide.pickupLocation} → {activeRide.dropLocation}</strong><br />
-            <span style={{ color: '#6b7280' }}>Customer: {activeRide.customer?.name} · {activeRide.passengers} passenger{activeRide.passengers > 1 ? 's' : ''}</span>
+            {isSharedGroup
+              ? <span style={{ color: '#6b7280' }}>{activeGroup.length} customers · {totalGroupPax} total passengers ({activeGroup.map(r => r.customer?.name).join(', ')})</span>
+              : <span style={{ color: '#6b7280' }}>Customer: {activeRide.customer?.name} · {activeRide.passengers} passenger{activeRide.passengers > 1 ? 's' : ''}</span>}
           </div>
         )}
         <Form form={startMileageForm} layout="vertical" onFinish={handleStartMileageSubmit}>
@@ -239,7 +295,9 @@ export default function Dashboard() {
         {activeRide && (
           <div style={{ background: '#f9fafb', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#374151' }}>
             <strong>{activeRide.pickupLocation} → {activeRide.dropLocation}</strong><br />
-            <span style={{ color: '#6b7280' }}>Customer: {activeRide.customer?.name} · {activeRide.passengers} passenger{activeRide.passengers > 1 ? 's' : ''}</span>
+            {isSharedGroup
+              ? <span style={{ color: '#6b7280' }}>{activeGroup.length} customers · {totalGroupPax} total passengers ({activeGroup.map(r => r.customer?.name).join(', ')})</span>
+              : <span style={{ color: '#6b7280' }}>Customer: {activeRide.customer?.name} · {activeRide.passengers} passenger{activeRide.passengers > 1 ? 's' : ''}</span>}
           </div>
         )}
         <Form form={endMileageForm} layout="vertical" onFinish={handleEndMileageSubmit}>

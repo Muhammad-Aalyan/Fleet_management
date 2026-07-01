@@ -16,4 +16,12 @@ export class DashboardController {
   @Get('recent-requests')
   @Roles('ADMIN')
   recent() { return this.svc.getRecentRequests(); }
+
+  @Get('active-rides')
+  @Roles('ADMIN')
+  activeRides() { return this.svc.getActiveRides(); }
+
+  @Get('customers')
+  @Roles('ADMIN')
+  customers() { return this.svc.getCustomers(); }
 }
