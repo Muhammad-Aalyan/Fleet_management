@@ -10,6 +10,7 @@ import { MileageModule } from './mileage/mileage.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { ReimbursementsModule } from './reimbursements/reimbursements.module';
+import { ReportsModule } from './reports/reports.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ReimbursementsModule } from './reimbursements/reimbursements.module';
     DashboardModule,
     AlertsModule,
     ReimbursementsModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}

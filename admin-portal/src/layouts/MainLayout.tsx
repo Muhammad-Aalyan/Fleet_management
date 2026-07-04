@@ -7,7 +7,7 @@ import {
   DashboardOutlined, CarOutlined, TeamOutlined, UserOutlined,
   FileTextOutlined, ThunderboltOutlined, BarChartOutlined,
   LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, DollarOutlined,
-  WalletOutlined,
+  WalletOutlined, CompassOutlined,
 } from '@ant-design/icons'
 import NotificationBell from '../components/NotificationBell'
 import EmergencyBanner from '../components/EmergencyBanner'
@@ -32,13 +32,35 @@ const menuItems = [
       { key: '/reimbursements/driver',   label: 'Driver Claims' },
     ],
   },
-  { key: '/reports',             icon: <BarChartOutlined />,   label: 'Reports' },
+  {
+    key: 'reports',
+    icon: <BarChartOutlined />,
+    label: 'Reports',
+    children: [
+      { key: '/reports/rides',               label: 'Rides' },
+      { key: '/reports/customers',           label: 'Customer' },
+      { key: '/reports/fuel',               label: 'Fuel' },
+      { key: '/reports/driver-performance', label: 'Driver Performance' },
+      { key: '/reports/vehicle-utilization', label: 'Vehicle Utilization' },
+      { key: '/reports/route-analysis',     label: 'Route Analysis', icon: <CompassOutlined /> },
+      { key: '/reports/reimbursements',     label: 'Reimbursements' },
+      { key: '/reports/fuel-efficiency',    label: 'Fuel Efficiency' },
+    ],
+  },
 ]
 
 const pageTitles: Record<string, string> = {
   '/dashboard': 'Dashboard', '/ride-requests': 'Ride Requests', '/active-rides': 'Active Rides',
   '/drivers': 'Drivers', '/vehicles': 'Vehicles', '/customers': 'Customers',
-  '/fuel-records': 'Fuel Records', '/reports': 'Reports',
+  '/fuel-records': 'Fuel Records',
+  '/reports/rides': 'Rides Report',
+  '/reports/customers': 'Customer Report',
+  '/reports/fuel': 'Fuel Report',
+  '/reports/driver-performance': 'Driver Performance Report',
+  '/reports/vehicle-utilization': 'Vehicle Utilization Report',
+  '/reports/route-analysis': 'Route Analysis Report',
+  '/reports/reimbursements': 'Reimbursements Summary',
+  '/reports/fuel-efficiency': 'Fuel Efficiency Report',
   '/reimbursements/customer': 'Customer Reimbursements',
   '/reimbursements/driver': 'Driver Reimbursements',
 }
@@ -75,8 +97,11 @@ export default function MainLayout() {
     { key: 'logout', icon: <LogoutOutlined />, label: 'Logout', danger: true },
   ]
 
-  // Keep parent "Reimbursements" open when on a child route
-  const openKeys = location.pathname.startsWith('/reimbursements') ? ['reimbursements'] : []
+  // Keep parent submenu open when on a child route
+  const openKeys = [
+    ...(location.pathname.startsWith('/reimbursements') ? ['reimbursements'] : []),
+    ...(location.pathname.startsWith('/reports') ? ['reports'] : []),
+  ]
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -93,7 +118,7 @@ export default function MainLayout() {
           selectedKeys={[location.pathname]}
           defaultOpenKeys={openKeys}
           items={menuItems}
-          onClick={({ key }) => { if (!key.startsWith('reimbursements')) navigate(key) }}
+          onClick={({ key }) => { if (!key.startsWith('reimbursements') && !key.startsWith('reports')) navigate(key) }}
           style={{ marginTop: 8, border: 'none' }}
         />
       </Sider>
