@@ -1,11 +1,10 @@
-import { Card, Form, Input, DatePicker, TimePicker, InputNumber, Button, Select, Typography, message, Steps, Space, Alert } from 'antd'
+import { Form, Input, DatePicker, TimePicker, InputNumber, Button, Select, Space, Alert, message } from 'antd'
 import { useState } from 'react'
-import { EnvironmentOutlined, ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons'
+import { CheckCircleOutlined } from '@ant-design/icons'
 import { useNavigate, useLocation } from 'react-router-dom'
 import api from '../api/axios'
 import dayjs from 'dayjs'
 
-const { Title, Text } = Typography
 const { Option } = Select
 
 export default function RequestRide() {
@@ -40,14 +39,14 @@ export default function RequestRide() {
   if (submitted) {
     return (
       <div style={{ maxWidth: 500, margin: '40px auto', textAlign: 'center' }}>
-        <Card style={{ border: '1px solid #ede9fe', padding: 20 }}>
-          <CheckCircleOutlined style={{ fontSize: 64, color: '#7c3aed', marginBottom: 16 }} />
-          <Title level={3} style={{ color: '#7c3aed' }}>Request Submitted!</Title>
-          <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
+        <div className="rd-form-card" style={{ maxWidth: 'none' }}>
+          <CheckCircleOutlined style={{ fontSize: 64, color: 'var(--rd-red)', marginBottom: 16 }} />
+          <h2 style={{ color: 'var(--rd-red)', fontSize: 22, marginBottom: 12 }}>Request Submitted!</h2>
+          <p style={{ color: 'var(--rd-ink-soft)', marginBottom: 24 }}>
             Your ride request has been submitted. You'll be notified once admin approves and assigns a driver.
-          </Text>
+          </p>
           <Space direction="vertical" style={{ width: '100%' }}>
-            <Button type="primary" block style={{ height: 46, background: '#7c3aed', borderColor: '#7c3aed' }}
+            <Button type="primary" block style={{ height: 46 }}
               onClick={() => { setSubmitted(false); form.resetFields() }}>
               Request Another Ride
             </Button>
@@ -55,23 +54,25 @@ export default function RequestRide() {
               View My Rides
             </Button>
           </Space>
-        </Card>
+        </div>
       </div>
     )
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: '0 auto' }}>
-      <Title level={4} style={{ marginBottom: 8 }}>Request a Ride</Title>
-      <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>Fill in the details and admin will assign a driver for you.</Text>
+    <div>
+      <div className="rd-page-title">Request a Ride</div>
+      <p className="rd-page-sub">Fill in the details and admin will assign a driver for you.</p>
 
-      <Steps size="small" current={0} style={{ marginBottom: 28 }} items={[
-        { title: 'Fill Details', icon: <EnvironmentOutlined /> },
-        { title: 'Admin Review', icon: <ClockCircleOutlined /> },
-        { title: 'Driver Assigned', icon: <CheckCircleOutlined /> },
-      ]} />
+      <div className="rd-stepper">
+        <div className="rd-step active"><div className="circle">📍</div>Fill Details</div>
+        <div className="rd-step-line" />
+        <div className="rd-step"><div className="circle">🕐</div>Admin Review</div>
+        <div className="rd-step-line" />
+        <div className="rd-step"><div className="circle">✓</div>Driver Assigned</div>
+      </div>
 
-      <Card style={{ border: '1px solid #ede9fe' }}>
+      <div className="rd-form-card">
         {prefill?.pickupLocation && (
           <Alert
             type="info"
@@ -95,10 +96,10 @@ export default function RequestRide() {
           }}
         >
           <Form.Item label="Pickup Location" name="pickup" rules={[{ required: true, message: 'Enter pickup location' }]}>
-            <Input prefix={<EnvironmentOutlined style={{ color: '#7c3aed' }} />} placeholder="e.g. DHA Phase 5, Karachi" size="large" />
+            <Input placeholder="e.g. DHA Phase 5, Karachi" size="large" />
           </Form.Item>
           <Form.Item label="Drop Location" name="drop" rules={[{ required: true, message: 'Enter drop location' }]}>
-            <Input prefix={<EnvironmentOutlined style={{ color: '#22c55e' }} />} placeholder="e.g. Saddar, Karachi" size="large" />
+            <Input placeholder="e.g. Saddar, Karachi" size="large" />
           </Form.Item>
           <Form.Item label="Date" name="date" rules={[{ required: true, message: 'Select date' }]}>
             <DatePicker style={{ width: '100%' }} size="large" disabledDate={d => d.isBefore(dayjs(), 'day')} />
@@ -118,12 +119,11 @@ export default function RequestRide() {
             <Input.TextArea rows={3} placeholder="Any additional notes..." />
           </Form.Item>
           <Button htmlType="submit" type="primary" block size="large" loading={loading}
-            style={{ height: 50, fontSize: 16, borderRadius: 10, marginTop: 8, background: '#7c3aed', borderColor: '#7c3aed' }}>
+            style={{ height: 50, fontSize: 16, borderRadius: 10, marginTop: 8 }}>
             Submit Ride Request
           </Button>
         </Form>
-      </Card>
+      </div>
     </div>
   )
 }
-

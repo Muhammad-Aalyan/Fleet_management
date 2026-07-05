@@ -50,8 +50,8 @@ export default function EmergencyBanner() {
     <div style={{ position: 'sticky', top: 0, zIndex: 200 }}>
       {visible.map((alert) => (
         <div key={alert.id} style={{
-          background: 'linear-gradient(90deg, #7f1d1d, #991b1b)',
-          borderBottom: '2px solid #ef4444',
+          background: 'linear-gradient(90deg, #6B0F16, #A3141D)',
+          borderBottom: '2px solid #E01E2B',
           padding: '10px 20px',
           display: 'flex',
           alignItems: 'center',

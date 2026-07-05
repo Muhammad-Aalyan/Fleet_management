@@ -1,29 +1,35 @@
 import { useState } from 'react'
-import { Layout, Menu, Avatar, Dropdown, Button, Typography } from 'antd'
+import { Dropdown } from 'antd'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
-import {
-  HomeOutlined, PlusCircleOutlined, CarOutlined, HistoryOutlined,
-  UserOutlined, LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined, WalletOutlined,
-} from '@ant-design/icons'
+import { LogoutOutlined } from '@ant-design/icons'
 import NotificationBell from '../components/NotificationBell'
+import { IconHome, IconRequest, IconVehicle, IconClock, IconReceipt } from '../components/icons'
 
-const { Sider, Header, Content } = Layout
-const { Text } = Typography
+interface NavLeaf { path: string; label: string; icon?: React.ReactNode }
 
-const menuItems = [
-  { key: '/home',          icon: <HomeOutlined />,         label: 'Home' },
-  { key: '/request-ride',  icon: <PlusCircleOutlined />,   label: 'Request a Ride' },
-  { key: '/my-rides',      icon: <CarOutlined />,          label: 'My Rides' },
-  { key: '/history',       icon: <HistoryOutlined />,      label: 'Ride History' },
-  { key: '/reimbursement', icon: <WalletOutlined />,       label: 'Reimbursement' },
+const mainNav: NavLeaf[] = [
+  { path: '/home', label: 'Home', icon: <IconHome /> },
+  { path: '/request-ride', label: 'Request a Ride', icon: <IconRequest /> },
+  { path: '/my-rides', label: 'My Rides', icon: <IconVehicle /> },
+  { path: '/history', label: 'Ride History', icon: <IconClock /> },
+  { path: '/reimbursement', label: 'Reimbursement', icon: <IconReceipt /> },
 ]
 
 const pageTitles: Record<string, string> = {
   '/home': 'Home', '/request-ride': 'Request a Ride',
   '/my-rides': 'My Rides', '/history': 'Ride History',
   '/reimbursement': 'Reimbursement Claims',
+}
+
+function NavItem({ item, active, onClick }: { item: NavLeaf; active: boolean; onClick: () => void }) {
+  return (
+    <div className={`rd-nav-item${active ? ' active' : ''}`} onClick={onClick}>
+      {item.icon}
+      {item.label}
+    </div>
+  )
 }
 
 export default function MainLayout() {
@@ -46,7 +52,7 @@ export default function MainLayout() {
           <div style={{ fontWeight: 600, fontSize: 14 }}>{user?.name ?? 'Customer'}</div>
           <div style={{ fontSize: 12, color: '#8c8c8c' }}>{user?.email}</div>
           <div style={{ marginTop: 4 }}>
-            <span style={{ background: '#f5f3ff', color: '#7c3aed', fontSize: 11, padding: '1px 8px', borderRadius: 10, fontWeight: 600 }}>
+            <span style={{ background: '#FDEAEB', color: '#E01E2B', fontSize: 11, padding: '1px 8px', borderRadius: 10, fontWeight: 600 }}>
               {user?.role}
             </span>
           </div>
@@ -58,50 +64,53 @@ export default function MainLayout() {
     { key: 'logout', icon: <LogoutOutlined />, label: 'Logout', danger: true },
   ]
 
-  return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider
-        collapsible collapsed={collapsed} trigger={null} width={220}
-        style={{ position: 'fixed', height: '100vh', left: 0, top: 0, zIndex: 100, background: '#fff', borderRight: '1px solid #ede9fe' }}
-      >
-        <div className="logo-area">
-          <span className="logo-icon">🚖</span>
-          {!collapsed && <span className="logo-text">Fleet<span>Ride</span></span>}
-        </div>
-        <Menu
-          mode="inline" selectedKeys={[location.pathname]}
-          items={menuItems} onClick={({ key }) => navigate(key)}
-          style={{ marginTop: 8, border: 'none', background: '#fff' }}
-        />
-      </Sider>
+  const initial = (user?.name ?? 'C').charAt(0).toUpperCase()
 
-      <Layout style={{ marginLeft: collapsed ? 80 : 220, transition: 'all 0.2s' }}>
-        <Header className="site-header">
-          <div className="header-left">
-            <Button type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setCollapsed(!collapsed)} style={{ fontSize: 16 }}
-            />
-            <span className="page-title">{pageTitles[location.pathname] ?? 'Customer'}</span>
+  return (
+    <div>
+      <div className={`rd-sidebar${collapsed ? ' collapsed' : ''}`}>
+        <div className="rd-brand">
+          <img src="/logo-mark.png" alt="Ride On" />
+        </div>
+
+        <div className="rd-nav-scroll">
+          {mainNav.map(item => (
+            <NavItem key={item.path} item={item} active={location.pathname === item.path} onClick={() => navigate(item.path)} />
+          ))}
+        </div>
+
+        <div className="rd-sidebar-foot">
+          <div className="tag">CUSTOMER PORTAL</div>
+          <div className="line">BRING IT <span>ON!</span></div>
+        </div>
+      </div>
+
+      <div className={`rd-main${collapsed ? ' collapsed' : ''}`}>
+        <div className="rd-topbar">
+          <div className="left">
+            <button className="rd-hamb" onClick={() => setCollapsed(!collapsed)} aria-label="Toggle sidebar">
+              <span /><span /><span />
+            </button>
+            <h1>{pageTitles[location.pathname] ?? 'Customer'}</h1>
           </div>
-          <div className="header-right">
+          <div className="right">
             <NotificationBell />
             <Dropdown
               menu={{ items: userMenuItems, onClick: ({ key }) => key === 'logout' && handleLogout() }}
               placement="bottomRight"
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                <Avatar style={{ background: '#7c3aed' }} icon={<UserOutlined />} />
-                <Text strong style={{ fontSize: 14 }}>{user?.name ?? 'Customer'}</Text>
+              <div className="rd-cust-chip">
+                <div className="rd-avatar">{initial}</div>
+                {user?.name ?? 'Customer'}
               </div>
             </Dropdown>
           </div>
-        </Header>
+        </div>
 
-        <Content className="page-content">
+        <div className="rd-content">
           <Outlet />
-        </Content>
-      </Layout>
-    </Layout>
+        </div>
+      </div>
+    </div>
   )
 }

@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Table, Input, Card, Avatar, Typography, Tag, Spin } from 'antd'
-import { SearchOutlined, UserOutlined } from '@ant-design/icons'
+import { Table, Input, Card, Spin } from 'antd'
+import { SearchOutlined } from '@ant-design/icons'
 import api from '../api/axios'
-
-const { Title } = Typography
+import RdBadge from '../components/Badge'
 
 export default function Customers() {
   const [raw, setRaw] = useState<any[]>([])
@@ -28,22 +27,24 @@ export default function Customers() {
       title: 'Customer', key: 'customer',
       render: (_: unknown, r: any) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar icon={<UserOutlined />} style={{ background: '#722ed1' }} />
+          <div className="rd-avatar" style={{ width: 32, height: 32, fontSize: 12, background: 'linear-gradient(135deg,#4A4D57,#22232A)' }}>
+            {r.name?.charAt(0).toUpperCase()}
+          </div>
           <div>
-            <div style={{ fontWeight: 600 }}>{r.name}</div>
-            <div style={{ fontSize: 12, color: '#6b7280' }}>{r.email}</div>
+            <div className="rd-cell-strong">{r.name}</div>
+            <div className="rd-cell-sub">{r.email}</div>
           </div>
         </div>
       ),
     },
     { title: 'Phone', dataIndex: 'phone', key: 'phone' },
     { title: 'Total Rides', dataIndex: 'totalRides', key: 'total', render: (v: number) => v ?? 0 },
-    { title: 'Completed',   dataIndex: 'completedRides', key: 'completed', render: (v: number) => <Tag color="green">{v ?? 0}</Tag> },
-    { title: 'Active',      dataIndex: 'activeRides',    key: 'active',    render: (v: number) => v > 0 ? <Tag color="blue">{v}</Tag> : <Tag>{v ?? 0}</Tag> },
-    { title: 'Cancelled',   dataIndex: 'cancelledRides', key: 'cancelled', render: (v: number) => v > 0 ? <Tag color="red">{v}</Tag> : <Tag>{v ?? 0}</Tag> },
+    { title: 'Completed',   dataIndex: 'completedRides', key: 'completed', render: (v: number) => <RdBadge status="COMPLETED" label={String(v ?? 0)} /> },
+    { title: 'Active',      dataIndex: 'activeRides',    key: 'active',    render: (v: number) => <RdBadge status="APPROVED" label={String(v ?? 0)} /> },
+    { title: 'Cancelled',   dataIndex: 'cancelledRides', key: 'cancelled', render: (v: number) => <RdBadge status="CANCELLED" label={String(v ?? 0)} /> },
     {
       title: 'Status', dataIndex: 'isActive', key: 'status',
-      render: (v: boolean) => <Tag color={v ? 'green' : 'default'}>{v ? 'Active' : 'Inactive'}</Tag>,
+      render: (v: boolean) => <RdBadge status={v ? 'AVAILABLE' : 'INACTIVE'} label={v ? 'Active' : 'Inactive'} />,
     },
     {
       title: 'Joined', dataIndex: 'joinedAt', key: 'joined',
@@ -57,8 +58,10 @@ export default function Customers() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0 }}>Customers</Title>
+      <div className="rd-row-between">
+        <div className="rd-page-title" style={{ margin: 0 }}>Customers</div>
+      </div>
+      <Card style={{ marginBottom: 16 }}>
         <Input
           placeholder="Search by name, phone or email"
           prefix={<SearchOutlined />}
@@ -66,10 +69,10 @@ export default function Customers() {
           onChange={e => setSearch(e.target.value)}
           style={{ width: 280 }}
         />
-      </div>
-      <Card style={{ borderRadius: 12 }}>
+      </Card>
+      <Card>
         <Spin spinning={loading}>
-          <Table dataSource={data} columns={columns} rowKey="id" pagination={{ pageSize: 20 }} />
+          <Table dataSource={data} columns={columns} rowKey="id" pagination={{ pageSize: 20 }} scroll={{ x: 'max-content' }} />
         </Spin>
       </Card>
     </div>

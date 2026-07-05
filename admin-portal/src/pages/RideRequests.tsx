@@ -2,14 +2,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { Table, Tag, Button, Space, Input, Select, Card, Modal, Form, Descriptions, Typography, message, Spin, Tooltip, Switch, Alert } from 'antd'
 import { SearchOutlined, EyeOutlined, CheckOutlined, CloseOutlined, UserAddOutlined, ReloadOutlined, MergeCellsOutlined } from '@ant-design/icons'
 import api from '../api/axios'
+import RdBadge from '../components/Badge'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 const { Option } = Select
-
-const statusColors: Record<string, string> = {
-  PENDING: 'gold', APPROVED: 'blue', ASSIGNED: 'purple',
-  IN_PROGRESS: 'processing', COMPLETED: 'green', REJECTED: 'red', CANCELLED: 'default',
-}
 
 interface Ride {
   id: number
@@ -167,10 +163,10 @@ export default function RideRequests() {
     { title: 'Drop', dataIndex: 'dropLocation', key: 'drop' },
     { title: 'Date', key: 'date', render: (_: unknown, r: Ride) => <><div>{new Date(r.scheduledDate).toLocaleDateString()}</div><Text type="secondary" style={{ fontSize: 12 }}>{r.scheduledTime}</Text></> },
     { title: 'Pax', dataIndex: 'passengers', key: 'passengers', width: 55 },
-    { title: 'Driver', key: 'driver', render: (_: unknown, r: Ride) => r.assignment?.driver?.name ? <Tag color="purple">{r.assignment.driver.name}</Tag> : <Text type="secondary">—</Text> },
+    { title: 'Driver', key: 'driver', render: (_: unknown, r: Ride) => r.assignment?.driver?.name ? <span className="rd-name-pill">{r.assignment.driver.name}</span> : <Text type="secondary">—</Text> },
     {
       title: 'Status', dataIndex: 'status', key: 'status',
-      render: (s: string) => <Tag color={statusColors[s]}>{s.replace('_', ' ')}</Tag>,
+      render: (s: string) => <RdBadge status={s} label={s.replace('_', ' ')} />,
     },
     {
       title: 'Actions', key: 'actions', width: 160,
@@ -201,8 +197,8 @@ export default function RideRequests() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0 }}>Ride Requests</Title>
+      <div className="rd-row-between">
+        <div className="rd-page-title" style={{ margin: 0 }}>Ride Requests</div>
         <Space>
           {canMerge && (
             <Button
@@ -219,11 +215,11 @@ export default function RideRequests() {
               {selectedRowKeys.length === 1 ? 'Select 1 more ride to merge' : 'Selected rides must be APPROVED or PENDING'}
             </Text>
           )}
-          <Button icon={<ReloadOutlined />} onClick={fetchRides}>Refresh</Button>
+          <Button icon={<ReloadOutlined />} onClick={fetchRides} style={{ background: '#0C0D10', borderColor: '#0C0D10', color: '#fff' }}>Refresh</Button>
         </Space>
       </div>
 
-      <Card style={{ borderRadius: 12, marginBottom: 16 }}>
+      <Card style={{ marginBottom: 16 }}>
         <Space wrap>
           <Input placeholder="Search customer or location..." prefix={<SearchOutlined />}
             value={search} onChange={e => setSearch(e.target.value)} style={{ width: 280 }} />
@@ -235,13 +231,14 @@ export default function RideRequests() {
         </Space>
       </Card>
 
-      <Card style={{ borderRadius: 12 }}>
+      <Card>
         <Spin spinning={loading}>
           <Table
             dataSource={filtered}
             columns={columns}
             rowKey="id"
             size="middle"
+            scroll={{ x: 'max-content' }}
             pagination={{ pageSize: 10, showTotal: t => `${t} total` }}
             rowSelection={{
               selectedRowKeys,
@@ -266,7 +263,7 @@ export default function RideRequests() {
             <Descriptions.Item label="Time">{detailRide.scheduledTime}</Descriptions.Item>
             <Descriptions.Item label="Passengers">{detailRide.passengers}</Descriptions.Item>
             <Descriptions.Item label="Purpose">{detailRide.purpose || '—'}</Descriptions.Item>
-            <Descriptions.Item label="Status"><Tag color={statusColors[detailRide.status]}>{detailRide.status}</Tag></Descriptions.Item>
+            <Descriptions.Item label="Status"><RdBadge status={detailRide.status} label={detailRide.status.replace('_', ' ')} /></Descriptions.Item>
             <Descriptions.Item label="Remarks">{detailRide.remarks || '—'}</Descriptions.Item>
             {detailRide.mergeGroupId && (
               <Descriptions.Item label="Merge Group" span={2}>
@@ -492,7 +489,7 @@ export default function RideRequests() {
                 </div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                   <Tag>{r.passengers} pax</Tag>
-                  <Tag color={statusColors[r.status]}>{r.status}</Tag>
+                  <RdBadge status={r.status} label={r.status.replace('_', ' ')} />
                 </div>
               </div>
             ))}

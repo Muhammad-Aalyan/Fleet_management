@@ -1,13 +1,15 @@
 import { useEffect, useState, useRef } from 'react'
-import { Card, Button, Form, Input, InputNumber, Select, DatePicker, Table, Tag, Typography, Modal, message, Spin, Descriptions } from 'antd'
+import { Card, Button, Form, Input, InputNumber, Select, DatePicker, Table, Modal, message, Spin, Descriptions } from 'antd'
 import { PlusOutlined, UploadOutlined, EyeOutlined, WalletOutlined } from '@ant-design/icons'
 import api from '../api/axios'
+import RdBadge from '../components/Badge'
 
-const { Title, Text } = Typography
-const { TextArea } = Input
+const claimBadge = (status: string) => {
+  if (status === 'APPROVED') return <RdBadge status="COMPLETED" label="✔ Approved" />
+  if (status === 'REJECTED') return <RdBadge status="REJECTED" label="✕ Rejected" />
+  return <RdBadge status="PENDING" label="⏳ Pending" />
+}
 
-const statusColor: Record<string, string> = { PENDING: 'gold', APPROVED: 'green', REJECTED: 'red' }
-const statusIcon: Record<string, string> = { PENDING: '⏳', APPROVED: '✅', REJECTED: '❌' }
 const modeLabel: Record<string, string> = {
   TAXI: 'Taxi / Cab', BUS: 'Public Bus', OWN_TRANSPORT: 'Own Transport',
   RIDE_SHARE: 'Ride Share (Careem/Uber)', OTHER: 'Other',
@@ -67,18 +69,18 @@ export default function Reimbursement() {
     { title: 'Destination', dataIndex: 'destination', key: 'dest' },
     { title: 'Purpose', dataIndex: 'purpose', key: 'purpose' },
     { title: 'Mode', dataIndex: 'travelMode', key: 'mode', render: (v: string) => modeLabel[v] ?? v },
-    { title: 'Amount (PKR)', dataIndex: 'amount', key: 'amount', render: (v: number) => <Text style={{ color: '#7c3aed', fontWeight: 600 }}>PKR {Number(v).toLocaleString()}</Text> },
+    { title: 'Amount (PKR)', dataIndex: 'amount', key: 'amount', render: (v: number) => <span className="rd-amount-red">PKR {Number(v).toLocaleString()}</span> },
     { title: 'Travel Date', dataIndex: 'travelDate', key: 'date', render: (v: string) => new Date(v).toLocaleDateString() },
     {
       title: 'Status', dataIndex: 'status', key: 'status',
-      render: (s: string) => <Tag color={statusColor[s]}>{statusIcon[s]} {s}</Tag>,
+      render: (s: string) => claimBadge(s),
     },
     {
       title: 'Actions', key: 'actions',
       render: (_: any, r: Claim) => (
         <div style={{ display: 'flex', gap: 6 }}>
           <Button size="small" icon={<EyeOutlined />} onClick={() => setViewClaim(r)} />
-          {r.receiptPhoto && <Button size="small" onClick={() => setReceiptPreview(r.receiptPhoto)}>Receipt</Button>}
+          {r.receiptPhoto && <button className="rd-btn" style={{ padding: '6px 12px' }} onClick={() => setReceiptPreview(r.receiptPhoto)}>Receipt</button>}
         </div>
       ),
     },
@@ -86,36 +88,34 @@ export default function Reimbursement() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="rd-row-between">
         <div>
-          <Title level={4} style={{ margin: 0 }}>Reimbursement Claims</Title>
-          <Text style={{ color: '#6b7280', fontSize: 13 }}>Submit claims for travel expenses related to company business</Text>
+          <div className="rd-page-title" style={{ margin: '0 0 4px' }}>Reimbursement Claims</div>
+          <div className="rd-page-sub" style={{ margin: 0 }}>Submit claims for travel expenses related to company business</div>
         </div>
-        <Button type="primary" icon={<PlusOutlined />}
-          style={{ background: '#7c3aed', borderColor: '#7c3aed' }}
-          onClick={() => setModalOpen(true)}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
           New Claim
         </Button>
       </div>
 
       <Spin spinning={loading}>
-        <Card style={{ borderRadius: 12 }}>
+        <Card>
           <Table dataSource={data} columns={columns} rowKey="id" size="middle"
-            locale={{ emptyText: 'No claims submitted yet.' }} />
+            locale={{ emptyText: 'No claims submitted yet.' }} scroll={{ x: 'max-content' }} />
         </Card>
       </Spin>
 
       {/* Submit Modal */}
       <Modal
-        title={<span><WalletOutlined style={{ color: '#7c3aed', marginRight: 8 }} />New Reimbursement Claim</span>}
+        title={<span><WalletOutlined style={{ color: '#E01E2B', marginRight: 8 }} />New Reimbursement Claim</span>}
         open={modalOpen}
         onCancel={() => { setModalOpen(false); form.resetFields(); setReceiptBase64(null) }}
         footer={null}
         width={560}
       >
-        <Text type="secondary" style={{ display: 'block', marginBottom: 16, fontSize: 13 }}>
+        <p style={{ marginBottom: 16, fontSize: 13, color: 'var(--rd-ink-soft)' }}>
           Fill in the details of your trip for reimbursement review.
-        </Text>
+        </p>
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 16px' }}>
             <Form.Item label="Where did you go? (Destination)" name="destination" rules={[{ required: true }]} style={{ gridColumn: '1 / -1' }}>
@@ -150,7 +150,7 @@ export default function Reimbursement() {
             )}
           </Form.Item>
           <Button htmlType="submit" type="primary" block loading={submitting}
-            style={{ background: '#7c3aed', borderColor: '#7c3aed', height: 42, fontWeight: 600 }}>
+            style={{ height: 42, fontWeight: 600 }}>
             Submit Claim
           </Button>
         </Form>
@@ -167,10 +167,10 @@ export default function Reimbursement() {
             <Descriptions.Item label="Amount Claimed">PKR {Number(viewClaim.amount).toLocaleString()}</Descriptions.Item>
             {viewClaim.notes && <Descriptions.Item label="Notes">{viewClaim.notes}</Descriptions.Item>}
             <Descriptions.Item label="Status">
-              <Tag color={statusColor[viewClaim.status]}>{statusIcon[viewClaim.status]} {viewClaim.status}</Tag>
+              {claimBadge(viewClaim.status)}
             </Descriptions.Item>
             {viewClaim.adminNote && (
-              <Descriptions.Item label="Admin Note" labelStyle={{ color: '#1677ff', fontWeight: 600 }}>
+              <Descriptions.Item label="Admin Note" labelStyle={{ color: '#E01E2B', fontWeight: 600 }}>
                 {viewClaim.adminNote}
               </Descriptions.Item>
             )}

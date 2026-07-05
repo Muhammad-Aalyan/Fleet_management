@@ -1,14 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Card, Tag, Button, Typography, Steps, Empty, Spin, message, Modal } from 'antd'
+import { Button, Steps, Spin, message, Modal } from 'antd'
 import { EnvironmentOutlined, UserOutlined, CarOutlined, CloseCircleOutlined, ReloadOutlined } from '@ant-design/icons'
 import api from '../api/axios'
-
-const { Title, Text } = Typography
-
-const statusColors: Record<string, string> = {
-  PENDING: 'gold', APPROVED: 'blue', ASSIGNED: 'purple',
-  IN_PROGRESS: 'processing', COMPLETED: 'green', CANCELLED: 'default', REJECTED: 'red',
-}
+import Badge from '../components/Badge'
 
 const statusStep: Record<string, number> = {
   PENDING: 0, APPROVED: 1, ASSIGNED: 2, IN_PROGRESS: 3, COMPLETED: 4,
@@ -65,17 +59,17 @@ export default function MyRides() {
   const pastRides = rides.filter(r => ['COMPLETED', 'CANCELLED', 'REJECTED'].includes(r.status))
 
   const RideCard = ({ ride }: { ride: Ride }) => (
-    <Card key={ride.id} style={{ marginBottom: 16, border: '1px solid #ede9fe', borderRadius: 12 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+    <div className="rd-ride-card" key={ride.id}>
+      <div className="rd-ride-top">
         <div>
-          <Tag color={statusColors[ride.status]} style={{ marginBottom: 8 }}>{ride.status.replace('_', ' ')}</Tag>
-          <div style={{ fontWeight: 700, fontSize: 16, color: '#1a1a2e' }}>
-            {ride.pickupLocation} <span style={{ color: '#7c3aed', margin: '0 6px' }}>→</span> {ride.dropLocation}
+          <Badge status={ride.status} label={ride.status.replace('_', ' ')} />
+          <div className="rd-ride-route" style={{ marginTop: 8 }}>
+            {ride.pickupLocation}<span className="arrow">→</span>{ride.dropLocation}
           </div>
-          <Text type="secondary" style={{ fontSize: 13 }}>
+          <div className="rd-ride-info">
             {new Date(ride.scheduledDate).toLocaleDateString()} at {ride.scheduledTime} · {ride.passengers} passenger{ride.passengers > 1 ? 's' : ''}
-          </Text>
-          {ride.purpose && <div><Text type="secondary" style={{ fontSize: 12 }}>Purpose: {ride.purpose}</Text></div>}
+          </div>
+          {ride.purpose && <div className="rd-ride-purpose">Purpose: {ride.purpose}</div>}
         </div>
         {['PENDING', 'APPROVED'].includes(ride.status) && (
           <Button danger size="small" icon={<CloseCircleOutlined />} onClick={() => handleCancel(ride.id)}>Cancel</Button>
@@ -83,7 +77,7 @@ export default function MyRides() {
       </div>
 
       {!['COMPLETED', 'CANCELLED', 'REJECTED'].includes(ride.status) && (
-        <Steps size="small" current={statusStep[ride.status] ?? 0} style={{ marginBottom: ride.assignment ? 16 : 0 }}
+        <Steps size="small" current={statusStep[ride.status] ?? 0} style={{ margin: '12px 0 16px' }}
           items={[
             { title: 'Requested' }, { title: 'Approved' },
             { title: 'Driver Assigned' }, { title: 'In Progress' }, { title: 'Completed' },
@@ -92,48 +86,40 @@ export default function MyRides() {
       )}
 
       {ride.assignment?.driver && (
-        <div style={{ background: '#f8f7ff', borderRadius: 10, padding: '12px 16px', display: 'flex', gap: 24, flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <UserOutlined style={{ color: '#7c3aed' }} />
-            <Text strong>{ride.assignment.driver.name}</Text>
-            <Text type="secondary" style={{ fontSize: 12 }}>({ride.assignment.driver.phone})</Text>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <CarOutlined style={{ color: '#7c3aed' }} />
-            <Text strong>{ride.assignment.vehicle.vehicleNumber} — {ride.assignment.vehicle.model}</Text>
-          </div>
+        <div className="rd-ride-driver">
+          <span><UserOutlined style={{ color: 'var(--rd-red)', marginRight: 6 }} />{ride.assignment.driver.name} ({ride.assignment.driver.phone})</span>
+          <span><CarOutlined style={{ color: 'var(--rd-red)', marginRight: 6 }} />{ride.assignment.vehicle.vehicleNumber} — {ride.assignment.vehicle.model}</span>
           {ride.status === 'IN_PROGRESS' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <EnvironmentOutlined style={{ color: '#22c55e' }} />
-              <Text style={{ color: '#22c55e', fontWeight: 600 }}>Ride in progress</Text>
-            </div>
+            <span style={{ color: 'var(--rd-good)', fontWeight: 600 }}><EnvironmentOutlined style={{ marginRight: 6 }} />Ride in progress</span>
           )}
         </div>
       )}
-    </Card>
+    </div>
   )
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0 }}>My Rides</Title>
+      <div className="rd-row-between">
+        <div className="rd-page-title" style={{ margin: 0 }}>My Rides</div>
         <Button icon={<ReloadOutlined />} onClick={fetchRides}>Refresh</Button>
       </div>
 
       <Spin spinning={loading}>
         {rides.length === 0 && !loading ? (
-          <Empty description="No rides yet. Request your first ride!" />
+          <div className="rd-panel" style={{ textAlign: 'center', padding: 40, color: 'var(--rd-ink-faint)' }}>
+            No rides yet. Request your first ride!
+          </div>
         ) : (
           <>
             {activeRides.length > 0 && (
               <>
-                <Text strong style={{ fontSize: 14, color: '#7c3aed', display: 'block', marginBottom: 12 }}>Active Rides</Text>
+                <div className="rd-page-sub" style={{ color: 'var(--rd-red)', fontWeight: 700, fontSize: 14, marginBottom: 12 }}>Active Rides</div>
                 {activeRides.map(r => <RideCard key={r.id} ride={r} />)}
               </>
             )}
             {pastRides.length > 0 && (
               <>
-                <Text strong style={{ fontSize: 14, color: '#6b7280', display: 'block', marginBottom: 12, marginTop: 24 }}>Past Rides</Text>
+                <div className="rd-page-sub" style={{ fontWeight: 700, fontSize: 14, marginBottom: 12, marginTop: 24 }}>Past Rides</div>
                 {pastRides.map(r => <RideCard key={r.id} ride={r} />)}
               </>
             )}

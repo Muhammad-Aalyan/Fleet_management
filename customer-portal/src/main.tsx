@@ -9,24 +9,22 @@ createRoot(document.getElementById('root')!).render(
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: '#7c3aed',
+          colorPrimary: '#E01E2B',
           colorBgContainer: '#ffffff',
-          colorBgLayout: '#f8f7ff',
-          borderRadius: 10,
+          colorBgLayout: '#F4F5F7',
+          colorLink: '#E01E2B',
+          borderRadius: 8,
           fontFamily: "'Inter', 'Segoe UI', sans-serif",
         },
         components: {
           Layout: {
             headerBg: '#ffffff',
-            siderBg: '#ffffff',
-          },
-          Menu: {
-            itemSelectedBg: '#ede9fe',
-            itemSelectedColor: '#7c3aed',
-            itemActiveBg: '#ede9fe',
+            siderBg: '#0C0D10',
           },
           Button: {
-            colorPrimary: '#7c3aed',
+            colorPrimary: '#E01E2B',
+            colorPrimaryHover: '#c81a26',
+            colorPrimaryActive: '#A3141D',
           },
         },
       }}

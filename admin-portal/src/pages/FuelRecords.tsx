@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Card, Statistic, Row, Col, Typography, Tag, Button, Modal, Table, Spin, Collapse, Badge } from 'antd'
-import { DollarOutlined, CarOutlined, EyeOutlined, DropboxOutlined, CalendarOutlined } from '@ant-design/icons'
+import { Modal, Table, Spin, Button, Typography } from 'antd'
+import { EyeOutlined } from '@ant-design/icons'
 import api from '../api/axios'
+import { IconVehicle, IconDollar, IconFuel, IconCheck } from '../components/icons'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 
 interface FuelLog {
   id: number; liters: number; amount: number; currentMileage: number
@@ -51,23 +52,22 @@ export default function FuelRecords() {
   const logColumns = [
     { title: 'Driver', dataIndex: 'driver', key: 'driver', render: (d: any) => d?.name ?? '—' },
     { title: 'Liters', dataIndex: 'liters', key: 'liters', render: (v: number) => `${v} L` },
-    { title: 'Amount (PKR)', dataIndex: 'amount', key: 'amount', render: (v: number) => Number(v).toLocaleString() },
+    { title: 'Amount (PKR)', dataIndex: 'amount', key: 'amount', className: 'rd-amount-red', render: (v: number) => Number(v).toLocaleString() },
     { title: 'Mileage (km)', dataIndex: 'currentMileage', key: 'mileage', render: (v: number) => Number(v).toLocaleString() },
     {
       title: 'Receipt', key: 'receipt',
       render: (_: any, r: FuelLog) => {
-        if (!r.receiptPhoto) return <Tag>No receipt</Tag>
+        if (!r.receiptPhoto) return <span className="rd-badge rd-b-pending">No receipt</span>
         if (r.receiptViewedAt) {
           const hoursLeft = Math.max(0, Math.round(
             (new Date(r.receiptViewedAt).getTime() + 86400000 - Date.now()) / 3600000
           ))
-          return <Tag color="orange">Viewed · {hoursLeft}h left</Tag>
+          return <span className="rd-badge rd-b-maintenance">Viewed · {hoursLeft}h left</span>
         }
         return (
           <Button size="small" type="primary" icon={<EyeOutlined />}
             loading={receiptLoading === r.id}
-            onClick={() => handleViewReceipt(r.id)}
-            style={{ background: '#1677ff', borderColor: '#1677ff' }}>
+            onClick={() => handleViewReceipt(r.id)}>
             View Receipt
           </Button>
         )
@@ -79,102 +79,69 @@ export default function FuelRecords() {
     },
   ]
 
-  const collapseItems = groups.map((g) => ({
-    key: String(g.vehicleId),
-    label: (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingRight: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{
-            width: 42, height: 42, borderRadius: 10,
-            background: 'linear-gradient(135deg, #1677ff22, #1677ff44)',
-            border: '1.5px solid #1677ff55',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <CarOutlined style={{ color: '#1677ff', fontSize: 18 }} />
-          </div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 15, color: '#111827' }}>{g.vehicleNumber}</div>
-            <div style={{ fontSize: 12, color: '#6b7280' }}>{g.model} · <Tag style={{ fontSize: 11, margin: 0 }}>{g.fuelType}</Tag></div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 11, color: '#9ca3af' }}>Entries</div>
-            <Badge count={g.totalEntries} style={{ background: '#6b7280' }} showZero />
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 11, color: '#9ca3af' }}>Total Liters</div>
-            <div style={{ fontWeight: 700, color: '#1677ff', fontSize: 14 }}>{Number(g.totalLiters).toFixed(1)} L</div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 11, color: '#9ca3af' }}>Total Cost</div>
-            <div style={{ fontWeight: 700, color: '#fa541c', fontSize: 14 }}>PKR {Number(g.totalAmount).toLocaleString()}</div>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 11, color: '#9ca3af' }}>Last Fill</div>
-            <div style={{ fontSize: 12, color: '#374151', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <CalendarOutlined style={{ fontSize: 11 }} />
-              {g.lastFuelDate ? new Date(g.lastFuelDate).toLocaleDateString() : '—'}
-            </div>
-          </div>
-        </div>
-      </div>
-    ),
-    children: (
-      <Table
-        dataSource={g.logs}
-        columns={logColumns}
-        rowKey="id"
-        size="small"
-        pagination={g.logs.length > 10 ? { pageSize: 10 } : false}
-        locale={{ emptyText: 'No fuel entries for this vehicle yet' }}
-      />
-    ),
-  }))
-
   return (
     <Spin spinning={loading}>
-      <Title level={4} style={{ marginBottom: 24 }}>Fuel Records</Title>
+      <div className="rd-page-title">Fuel Records</div>
 
-      {/* Summary cards */}
-      <Row gutter={16} style={{ marginBottom: 28 }}>
-        <Col xs={24} sm={8}>
-          <Card style={{ borderRadius: 12 }}>
-            <Statistic title="Total Fuel Cost (PKR)" value={totalAmount.toLocaleString()}
-              prefix={<DollarOutlined />} valueStyle={{ color: '#fa541c' }} />
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card style={{ borderRadius: 12 }}>
-            <Statistic title="Total Liters Filled" value={`${totalLiters.toFixed(1)} L`}
-              prefix={<DropboxOutlined />} valueStyle={{ color: '#1677ff' }} />
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card style={{ borderRadius: 12 }}>
-            <Statistic title="Avg Cost / Liter (PKR)" value={avgPerLiter.toFixed(0)}
-              valueStyle={{ color: '#52c41a' }} />
-          </Card>
-        </Col>
-      </Row>
+      <div className="rd-stats" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+        <div className="rd-stat">
+          <div className="top">
+            <span className="label">Total Fuel Cost (PKR)</span>
+            <div className="icon rd-ic-red"><IconDollar /></div>
+          </div>
+          <div className="value">{totalAmount.toLocaleString()}</div>
+        </div>
+        <div className="rd-stat">
+          <div className="top">
+            <span className="label">Total Liters Filled</span>
+            <div className="icon rd-ic-blue"><IconFuel /></div>
+          </div>
+          <div className="value">{totalLiters.toFixed(1)} L</div>
+        </div>
+        <div className="rd-stat">
+          <div className="top">
+            <span className="label">Avg Cost / Liter (PKR)</span>
+            <div className="icon rd-ic-good"><IconCheck /></div>
+          </div>
+          <div className="value">{avgPerLiter.toFixed(0)}</div>
+        </div>
+      </div>
 
-      {/* Per-vehicle accordion */}
       {groups.length === 0 && !loading ? (
-        <Card style={{ borderRadius: 12, textAlign: 'center', padding: 40 }}>
+        <div className="rd-panel" style={{ textAlign: 'center', padding: 40 }}>
           <Text type="secondary">No fuel records found</Text>
-        </Card>
+        </div>
       ) : (
-        <Collapse
-          accordion={false}
-          items={collapseItems}
-          style={{ borderRadius: 12, border: '1px solid #e5e7eb', background: '#fff' }}
-          expandIconPosition="end"
-        />
+        groups.map((g) => (
+          <div className="rd-fuel-group" key={g.vehicleId}>
+            <div className="rd-fuel-group-head">
+              <div className="veh">
+                <div className="rd-fuel-icon"><IconVehicle /></div>
+                <div>
+                  <div className="veh-name">{g.vehicleNumber}</div>
+                  <div className="veh-model">{g.model} · {g.fuelType}</div>
+                </div>
+              </div>
+              <div className="rd-fuel-meta">
+                <div><div className="m-label">Entries</div><div className="m-value">{g.totalEntries}</div></div>
+                <div><div className="m-label">Total Liters</div><div className="m-value blue">{Number(g.totalLiters).toFixed(1)} L</div></div>
+                <div><div className="m-label">Total Cost</div><div className="m-value red">PKR {Number(g.totalAmount).toLocaleString()}</div></div>
+                <div><div className="m-label">Last Fill</div><div className="m-value">{g.lastFuelDate ? new Date(g.lastFuelDate).toLocaleDateString() : '—'}</div></div>
+              </div>
+            </div>
+            {g.logs.length === 0 ? (
+              <div className="rd-empty-note">No fuel entries for this vehicle yet</div>
+            ) : (
+              <Table dataSource={g.logs} columns={logColumns} rowKey="id" size="small"
+                pagination={g.logs.length > 10 ? { pageSize: 10 } : false} scroll={{ x: 'max-content' }} />
+            )}
+          </div>
+        ))
       )}
 
       {/* Receipt Modal */}
       <Modal
-        title={<span><EyeOutlined style={{ marginRight: 8, color: '#1677ff' }} />Fuel Receipt</span>}
+        title={<span><EyeOutlined style={{ marginRight: 8, color: '#E01E2B' }} />Fuel Receipt</span>}
         open={!!receiptModal}
         onCancel={() => setReceiptModal(null)}
         footer={<Text type="secondary" style={{ fontSize: 12 }}>Receipt auto-deletes 24 hours after first view</Text>}

@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Row, Col, Card, Statistic, Tag, Button, Typography, Divider, Empty, Spin, Modal, Form, InputNumber, message } from 'antd'
-import { CarOutlined, CheckCircleOutlined, ClockCircleOutlined, ThunderboltOutlined, ArrowRightOutlined, DashboardOutlined } from '@ant-design/icons'
+import { Tag, Button, Divider, Spin, Modal, Form, InputNumber, message } from 'antd'
+import { ArrowRightOutlined, DashboardOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/axios'
 import { buildGroups } from '../utils/rideGrouping'
-
-const { Title, Text } = Typography
+import { IconVehicle, IconCheck, IconClock, IconBolt } from '../components/icons'
 
 interface Ride {
   id: number
@@ -107,165 +106,136 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div style={{ marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0, color: '#fff' }}>Welcome back, {user?.name} 👋</Title>
-        <Text style={{ color: '#888' }}>Here's your activity summary for today</Text>
+      <div className="rd-greet">Welcome back, {user?.name} <span className="wave">👋</span></div>
+      <p className="rd-page-sub">Here's your activity summary for today</p>
+
+      <div className="rd-stats">
+        <div className="rd-stat">
+          <div className="top"><span className="label">Today's Rides</span><div className="icon rd-ic-red"><IconVehicle /></div></div>
+          <div className="value">{todayRides.length}</div>
+        </div>
+        <div className="rd-stat">
+          <div className="top"><span className="label">Completed</span><div className="icon rd-ic-good"><IconCheck /></div></div>
+          <div className="value">{completed}</div>
+        </div>
+        <div className="rd-stat">
+          <div className="top"><span className="label">Assigned</span><div className="icon rd-ic-amber"><IconClock /></div></div>
+          <div className="value">{pending}</div>
+        </div>
+        <div className="rd-stat">
+          <div className="top"><span className="label">In Progress</span><div className="icon rd-ic-blue"><IconBolt /></div></div>
+          <div className="value">{inProgress}</div>
+        </div>
       </div>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        {[
-          { title: "Today's Rides", value: todayRides.length, icon: <CarOutlined />, color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
-          { title: 'Completed', value: completed, icon: <CheckCircleOutlined />, color: '#22c55e', bg: 'rgba(34,197,94,0.1)' },
-          { title: 'Assigned', value: pending, icon: <ClockCircleOutlined />, color: '#faad14', bg: 'rgba(250,173,20,0.1)' },
-          { title: 'In Progress', value: inProgress, icon: <ThunderboltOutlined />, color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
-        ].map(s => (
-          <Col xs={12} md={6} key={s.title}>
-            <Card className="stat-card">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div className="stat-icon" style={{ background: s.bg, color: s.color }}>{s.icon}</div>
-                <Statistic
-                  title={<span style={{ color: '#aaa', fontSize: 13 }}>{s.title}</span>}
-                  value={s.value}
-                  valueStyle={{ color: s.color, fontSize: 26, fontWeight: 700 }}
-                />
-              </div>
-            </Card>
-          </Col>
-        ))}
-      </Row>
-
-      <Row gutter={[16, 16]}>
-        <Col xs={24} lg={14}>
-          <Card
-            title={<span style={{ color: '#fff' }}>Current Assignment</span>}
-            style={{ borderRadius: 12, border: '1px solid #2a2a3f', background: '#1e1e2e' }}
-          >
-            <Spin spinning={loading}>
-              {!activeRide ? (
-                <Empty
-                  description={<Text style={{ color: '#6b7280' }}>No active ride right now</Text>}
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                />
-              ) : (
-                <div style={{ background: 'rgba(249,115,22,0.08)', border: `1.5px solid ${isSharedGroup ? '#f97316' : 'rgba(249,115,22,0.3)'}`, borderRadius: 10, padding: 20 }}>
-                  {/* Header row */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Tag color={activeRide.status === 'IN_PROGRESS' ? 'orange' : 'blue'}>
-                        {activeRide.status.replace('_', ' ')}
-                      </Tag>
-                      {isMergedGroup && (
-                        <span style={{ background: '#7c3aed', color: '#fff', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>
-                          🔗 Merged · {activeGroup.length} customers
-                        </span>
-                      )}
-                    {isSharedGroup && !isMergedGroup && (
-                        <span style={{ background: '#f97316', color: '#fff', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>
-                          Shared · {activeGroup.length} customers
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ color: '#888', fontSize: 11 }}>Vehicle</div>
-                      <div style={{ color: '#f97316', fontWeight: 700, fontSize: 14 }}>{activeRide.assignment?.vehicle?.vehicleNumber ?? '—'}</div>
-                    </div>
+      <div className="rd-split">
+        <div className="rd-panel">
+          <div className="rd-panel-head"><h3>Current Assignment</h3></div>
+          <Spin spinning={loading}>
+            {!activeRide ? (
+              <div className="rd-empty-box"><div className="ic">📭</div>No active ride right now</div>
+            ) : (
+              <div style={{ margin: 20, background: '#FDEAEB', border: `1.5px solid ${isSharedGroup ? '#E01E2B' : '#F6C6C9'}`, borderRadius: 10, padding: 20 }}>
+                {/* Header row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Tag color={activeRide.status === 'IN_PROGRESS' ? 'orange' : 'blue'}>
+                      {activeRide.status.replace('_', ' ')}
+                    </Tag>
+                    {isMergedGroup && <span className="rd-badge rd-b-merged">🔗 Merged · {activeGroup.length} customers</span>}
+                    {isSharedGroup && !isMergedGroup && <span className="rd-badge rd-b-shared">Shared · {activeGroup.length} customers</span>}
                   </div>
-
-                  {/* Route */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ color: '#888', fontSize: 11, marginBottom: 2 }}>FROM</div>
-                      <div style={{ color: '#fff', fontWeight: 600 }}>{activeRide.pickupLocation}</div>
-                    </div>
-                    <ArrowRightOutlined style={{ color: '#f97316', fontSize: 16 }} />
-                    <div style={{ flex: 1, textAlign: 'right' }}>
-                      <div style={{ color: '#888', fontSize: 11, marginBottom: 2 }}>TO</div>
-                      <div style={{ color: '#fff', fontWeight: 600 }}>{activeRide.dropLocation}</div>
-                    </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ color: 'var(--rd-ink-faint)', fontSize: 11 }}>Vehicle</div>
+                    <div style={{ color: 'var(--rd-red)', fontWeight: 700, fontSize: 14 }}>{activeRide.assignment?.vehicle?.vehicleNumber ?? '—'}</div>
                   </div>
+                </div>
 
-                  {/* Passenger summary */}
-                  <div style={{ color: '#9ca3af', fontSize: 12, marginBottom: 10 }}>
-                    {isSharedGroup
-                      ? `${activeGroup.length} customers · ${totalGroupPax} total passenger${totalGroupPax > 1 ? 's' : ''}`
-                      : `${activeRide.passengers} passenger${activeRide.passengers > 1 ? 's' : ''}`}
+                {/* Route */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ color: 'var(--rd-ink-faint)', fontSize: 11, marginBottom: 2 }}>FROM</div>
+                    <div style={{ color: 'var(--rd-ink)', fontWeight: 600 }}>{activeRide.pickupLocation}</div>
                   </div>
+                  <ArrowRightOutlined style={{ color: 'var(--rd-red)', fontSize: 16 }} />
+                  <div style={{ flex: 1, textAlign: 'right' }}>
+                    <div style={{ color: 'var(--rd-ink-faint)', fontSize: 11, marginBottom: 2 }}>TO</div>
+                    <div style={{ color: 'var(--rd-ink)', fontWeight: 600 }}>{activeRide.dropLocation}</div>
+                  </div>
+                </div>
 
-                  {/* Customer list */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-                    {activeGroup.map((r, idx) => (
-                      <div key={r.id} style={{
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(249,115,22,0.2)',
-                        borderRadius: 8, padding: '8px 12px',
-                        display: 'flex', alignItems: 'center', gap: 10,
+                {/* Passenger summary */}
+                <div style={{ color: 'var(--rd-ink-soft)', fontSize: 12, marginBottom: 10 }}>
+                  {isSharedGroup
+                    ? `${activeGroup.length} customers · ${totalGroupPax} total passenger${totalGroupPax > 1 ? 's' : ''}`
+                    : `${activeRide.passengers} passenger${activeRide.passengers > 1 ? 's' : ''}`}
+                </div>
+
+                {/* Customer list */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+                  {activeGroup.map((r, idx) => (
+                    <div key={r.id} style={{
+                      background: '#fff',
+                      border: '1px solid #F6C6C9',
+                      borderRadius: 8, padding: '8px 12px',
+                      display: 'flex', alignItems: 'center', gap: 10,
+                    }}>
+                      <div style={{
+                        width: 28, height: 28, borderRadius: '50%',
+                        background: isSharedGroup ? `hsl(${(idx * 60) % 360}, 60%, 45%)` : 'var(--rd-red)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: '#fff', fontWeight: 700, fontSize: 12, flexShrink: 0,
                       }}>
-                        <div style={{
-                          width: 28, height: 28, borderRadius: '50%',
-                          background: isSharedGroup ? `hsl(${(idx * 60) % 360}, 70%, 45%)` : '#f97316',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          color: '#fff', fontWeight: 700, fontSize: 12, flexShrink: 0,
-                        }}>
-                          {r.customer?.name?.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <div style={{ color: '#f9fafb', fontWeight: 600, fontSize: 13 }}>{r.customer?.name}</div>
-                          <div style={{ color: '#9ca3af', fontSize: 11 }}>
-                            {r.passengers} pax
-                            {isMergedGroup && <span style={{ color: '#a78bfa', marginLeft: 6 }}>{r.pickupLocation} → {r.dropLocation}</span>}
-                          </div>
+                        {r.customer?.name?.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ color: 'var(--rd-ink)', fontWeight: 600, fontSize: 13 }}>{r.customer?.name}</div>
+                        <div style={{ color: 'var(--rd-ink-soft)', fontSize: 11 }}>
+                          {r.passengers} pax
+                          {isMergedGroup && <span style={{ color: 'var(--rd-purple)', marginLeft: 6 }}>{r.pickupLocation} → {r.dropLocation}</span>}
                         </div>
                       </div>
-                    ))}
-                  </div>
-
-                  <Divider style={{ borderColor: 'rgba(249,115,22,0.2)', margin: '0 0 14px' }} />
-
-                  {activeRide.status === 'IN_PROGRESS' && (
-                    <Button type="primary" block icon={<DashboardOutlined />}
-                      style={{ background: '#f97316', border: 'none', height: 42, fontWeight: 600 }}
-                      onClick={() => setEndMileageOpen(true)}
-                    >
-                      {isSharedGroup ? `Complete ${isMergedGroup ? 'Merged' : 'Shared'} Ride for All ${activeGroup.length} Customers` : 'Complete Ride'} & Record End Mileage
-                    </Button>
-                  )}
-                  {activeRide.status === 'ASSIGNED' && (
-                    <Button type="primary" block icon={<DashboardOutlined />}
-                      style={{ background: '#22c55e', borderColor: '#22c55e', height: 42, fontWeight: 600 }}
-                      onClick={() => setStartMileageOpen(true)}
-                    >
-                      {isSharedGroup ? `Accept All ${activeGroup.length} ${isMergedGroup ? 'Merged' : 'Shared'} Rides` : 'Accept Ride'} & Record Start Mileage
-                    </Button>
-                  )}
+                    </div>
+                  ))}
                 </div>
-              )}
-            </Spin>
-          </Card>
-        </Col>
 
-        <Col xs={24} lg={10}>
-          <Card
-            title={<span style={{ color: '#fff' }}>Quick Actions</span>}
-            style={{ borderRadius: 12, border: '1px solid #2a2a3f', background: '#1e1e2e' }}
-          >
-            {[
-              { label: 'View All My Rides', path: '/my-rides', color: '#f97316' },
-              { label: 'Add Fuel Log', path: '/fuel-log', color: '#3b82f6' },
-              { label: 'Add Mileage Entry', path: '/mileage-log', color: '#22c55e' },
-              { label: '🚨 Mark Vehicle Stuck', path: '/emergency', color: '#ef4444' },
-            ].map(a => (
-              <Button key={a.label} block onClick={() => navigate(a.path)}
-                style={{ marginBottom: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid #2a2a3f', color: a.color, height: 42, textAlign: 'left' }}>
-                {a.label}
-              </Button>
-            ))}
-          </Card>
-        </Col>
-      </Row>
+                <Divider style={{ borderColor: '#F6C6C9', margin: '0 0 14px' }} />
+
+                {activeRide.status === 'IN_PROGRESS' && (
+                  <Button type="primary" block icon={<DashboardOutlined />}
+                    style={{ height: 42, fontWeight: 600 }}
+                    onClick={() => setEndMileageOpen(true)}
+                  >
+                    {isSharedGroup ? `Complete ${isMergedGroup ? 'Merged' : 'Shared'} Ride for All ${activeGroup.length} Customers` : 'Complete Ride'} & Record End Mileage
+                  </Button>
+                )}
+                {activeRide.status === 'ASSIGNED' && (
+                  <Button type="primary" block icon={<DashboardOutlined />}
+                    style={{ background: 'var(--rd-good)', borderColor: 'var(--rd-good)', height: 42, fontWeight: 600 }}
+                    onClick={() => setStartMileageOpen(true)}
+                  >
+                    {isSharedGroup ? `Accept All ${activeGroup.length} ${isMergedGroup ? 'Merged' : 'Shared'} Rides` : 'Accept Ride'} & Record Start Mileage
+                  </Button>
+                )}
+              </div>
+            )}
+          </Spin>
+        </div>
+
+        <div className="rd-panel">
+          <div className="rd-panel-head"><h3>Quick Actions</h3></div>
+          <div className="rd-quick-actions">
+            <button className="rd-qa-btn rd-qa-red" onClick={() => navigate('/my-rides')}>View All My Rides</button>
+            <button className="rd-qa-btn rd-qa-blue" onClick={() => navigate('/fuel-log')}>Add Fuel Log</button>
+            <button className="rd-qa-btn rd-qa-good" onClick={() => navigate('/mileage-log')}>Add Mileage Entry</button>
+            <button className="rd-qa-btn rd-qa-danger" onClick={() => navigate('/emergency')}>🚨 Mark Vehicle Stuck</button>
+          </div>
+        </div>
+      </div>
 
       {/* Start Mileage Modal */}
       <Modal
-        title={<span><DashboardOutlined style={{ color: '#22c55e', marginRight: 8 }} />Record Start Mileage</span>}
+        title={<span><DashboardOutlined style={{ color: '#12894F', marginRight: 8 }} />Record Start Mileage</span>}
         open={startMileageOpen}
         onCancel={() => { setStartMileageOpen(false); startMileageForm.resetFields() }}
         footer={null}
@@ -283,7 +253,7 @@ export default function Dashboard() {
             <InputNumber min={0} style={{ width: '100%' }} addonAfter="km" placeholder="e.g. 45,200" />
           </Form.Item>
           <Button htmlType="submit" type="primary" block loading={actionLoading}
-            style={{ background: '#22c55e', borderColor: '#22c55e', height: 42, fontWeight: 600 }}>
+            style={{ background: '#12894F', borderColor: '#12894F', height: 42, fontWeight: 600 }}>
             Accept Ride & Record Start Mileage
           </Button>
         </Form>
@@ -291,7 +261,7 @@ export default function Dashboard() {
 
       {/* End Mileage Modal */}
       <Modal
-        title={<span><DashboardOutlined style={{ color: '#f97316', marginRight: 8 }} />Record End Mileage</span>}
+        title={<span><DashboardOutlined style={{ color: '#E01E2B', marginRight: 8 }} />Record End Mileage</span>}
         open={endMileageOpen}
         onCancel={() => { setEndMileageOpen(false); endMileageForm.resetFields() }}
         footer={null}
@@ -309,7 +279,7 @@ export default function Dashboard() {
             <InputNumber min={0} style={{ width: '100%' }} addonAfter="km" placeholder="e.g. 45,500" />
           </Form.Item>
           <Button htmlType="submit" type="primary" block loading={actionLoading}
-            style={{ background: '#f97316', borderColor: '#f97316', height: 42, fontWeight: 600 }}>
+            style={{ height: 42, fontWeight: 600 }}>
             Complete Ride & Record End Mileage
           </Button>
         </Form>

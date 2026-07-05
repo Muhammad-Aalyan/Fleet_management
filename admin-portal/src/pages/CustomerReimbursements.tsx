@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react'
-import { Table, Tag, Card, Button, Modal, Form, Input, Select, Typography, Spin, Descriptions, message, Badge } from 'antd'
-import { CheckOutlined, CloseOutlined, EyeOutlined, DollarOutlined } from '@ant-design/icons'
+import { Table, Card, Button, Modal, Form, Input, Select, Typography, Spin, Descriptions, message, Badge } from 'antd'
+import { CheckOutlined, EyeOutlined } from '@ant-design/icons'
 import api from '../api/axios'
+import RdBadge from '../components/Badge'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 const { TextArea } = Input
 
-const statusColor: Record<string, string> = { PENDING: 'gold', APPROVED: 'green', REJECTED: 'red' }
 const modeLabel: Record<string, string> = {
   TAXI: 'Taxi', BUS: 'Bus', OWN_TRANSPORT: 'Own Transport', RIDE_SHARE: 'Ride Share', OTHER: 'Other',
+}
+
+const claimBadge = (status: string) => {
+  if (status === 'APPROVED') return <RdBadge status="COMPLETED" label="Approved" />
+  if (status === 'REJECTED') return <RdBadge status="REJECTED" label="Rejected" />
+  return <RdBadge status="PENDING" label="Pending" />
 }
 
 interface Claim {
@@ -59,26 +65,25 @@ export default function CustomerReimbursements() {
       title: 'Customer', key: 'customer',
       render: (_: any, r: Claim) => (
         <div>
-          <div style={{ fontWeight: 600 }}>{r.customer?.name}</div>
-          <div style={{ fontSize: 12, color: '#6b7280' }}>{r.customer?.user?.email}</div>
+          <div className="rd-cell-strong">{r.customer?.name}</div>
+          <div className="rd-cell-sub">{r.customer?.user?.email}</div>
         </div>
       ),
     },
     { title: 'Destination', dataIndex: 'destination', key: 'dest' },
     { title: 'Purpose', dataIndex: 'purpose', key: 'purpose' },
     { title: 'Mode', dataIndex: 'travelMode', key: 'mode', render: (v: string) => modeLabel[v] ?? v },
-    { title: 'Amount (PKR)', dataIndex: 'amount', key: 'amount', render: (v: number) => <Text strong style={{ color: '#fa541c' }}>PKR {Number(v).toLocaleString()}</Text> },
+    { title: 'Amount (PKR)', dataIndex: 'amount', key: 'amount', render: (v: number) => <span className="rd-amount-red">PKR {Number(v).toLocaleString()}</span> },
     { title: 'Date', dataIndex: 'travelDate', key: 'date', render: (v: string) => new Date(v).toLocaleDateString() },
-    { title: 'Status', dataIndex: 'status', key: 'status', render: (s: string) => <Tag color={statusColor[s]}>{s}</Tag> },
+    { title: 'Status', dataIndex: 'status', key: 'status', render: (s: string) => claimBadge(s) },
     {
       title: 'Actions', key: 'actions',
       render: (_: any, r: Claim) => (
         <div style={{ display: 'flex', gap: 6 }}>
           <Button size="small" icon={<EyeOutlined />} onClick={() => setViewModal(r)} />
-          {r.receiptPhoto && <Button size="small" onClick={() => viewReceipt(r.id)}>Receipt</Button>}
+          {r.receiptPhoto && <button className="rd-link-btn" onClick={() => viewReceipt(r.id)}>Receipt</button>}
           {r.status === 'PENDING' && (
             <Button size="small" type="primary" icon={<CheckOutlined />}
-              style={{ background: '#16a34a', borderColor: '#16a34a' }}
               onClick={() => { setReviewModal(r); form.resetFields() }}>
               Review
             </Button>
@@ -91,12 +96,12 @@ export default function CustomerReimbursements() {
   return (
     <Spin spinning={loading}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0 }}>Customer Reimbursements</Title>
-        {pending > 0 && <Badge count={pending} style={{ background: '#f97316' }} />}
+        <div className="rd-page-title" style={{ margin: 0 }}>Customer Reimbursements</div>
+        {pending > 0 && <Badge count={pending} color="#E01E2B" />}
       </div>
 
-      <Card style={{ borderRadius: 12 }}>
-        <Table dataSource={data} columns={columns} rowKey="id" size="middle" />
+      <Card>
+        <Table dataSource={data} columns={columns} rowKey="id" size="middle" scroll={{ x: 'max-content' }} />
       </Card>
 
       {/* Detail Modal */}
@@ -111,7 +116,7 @@ export default function CustomerReimbursements() {
             <Descriptions.Item label="Mode of Travel">{modeLabel[viewModal.travelMode] ?? viewModal.travelMode}</Descriptions.Item>
             <Descriptions.Item label="Amount">PKR {Number(viewModal.amount).toLocaleString()}</Descriptions.Item>
             <Descriptions.Item label="Notes">{viewModal.notes || '—'}</Descriptions.Item>
-            <Descriptions.Item label="Status"><Tag color={statusColor[viewModal.status]}>{viewModal.status}</Tag></Descriptions.Item>
+            <Descriptions.Item label="Status">{claimBadge(viewModal.status)}</Descriptions.Item>
             {viewModal.adminNote && <Descriptions.Item label="Admin Note">{viewModal.adminNote}</Descriptions.Item>}
             <Descriptions.Item label="Submitted">{new Date(viewModal.createdAt).toLocaleString()}</Descriptions.Item>
           </Descriptions>

@@ -26,6 +26,7 @@ export default function ReportTable<T extends object>({ columns, data, rowKey, t
         columns={columns}
         rowKey={rowKey as any}
         size="middle"
+        scroll={{ x: 'max-content' }}
         pagination={data.length > pageSize ? {
           pageSize, showSizeChanger: false,
           showTotal: (t) => footer ?? `${t} records`,

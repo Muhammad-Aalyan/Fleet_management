@@ -1,9 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
-import { Table, Card, Button, Form, InputNumber, Modal, Typography, message, Select, Tag, Upload, Image } from 'antd'
+import { Table, Card, Button, Form, InputNumber, Modal, message, Select } from 'antd'
 import { PlusOutlined, UploadOutlined, CarOutlined, FileImageOutlined } from '@ant-design/icons'
 import api from '../api/axios'
-
-const { Title, Text } = Typography
 
 interface Vehicle { id: number; vehicleNumber: string; model: string; fuelType: string }
 interface FuelEntry {
@@ -72,34 +70,34 @@ export default function FuelLog() {
       title: 'Vehicle', key: 'vehicle',
       render: (_: any, r: FuelEntry) => (
         <div>
-          <div style={{ fontWeight: 600, color: '#f97316' }}><CarOutlined style={{ marginRight: 4 }} />{r.vehicle?.vehicleNumber}</div>
-          <div style={{ fontSize: 12, color: '#9ca3af' }}>{r.vehicle?.model} · {r.vehicle?.fuelType}</div>
+          <div className="rd-cell-strong" style={{ color: 'var(--rd-red)' }}><CarOutlined style={{ marginRight: 4 }} />{r.vehicle?.vehicleNumber}</div>
+          <div className="rd-cell-sub">{r.vehicle?.model} · {r.vehicle?.fuelType}</div>
         </div>
       ),
     },
     { title: 'Liters', dataIndex: 'liters', key: 'liters', render: (v: number) => `${v} L` },
-    { title: 'Amount (PKR)', dataIndex: 'amount', key: 'amount', render: (v: number) => `PKR ${v.toLocaleString()}` },
+    { title: 'Amount (PKR)', dataIndex: 'amount', key: 'amount', className: 'rd-cell-strong', render: (v: number) => `PKR ${v.toLocaleString()}` },
     { title: 'Mileage (km)', dataIndex: 'currentMileage', key: 'mileage', render: (v: number) => v.toLocaleString() },
     {
       title: 'Receipt', key: 'receipt',
       render: (_: any, r: FuelEntry) => r.receiptPhoto
         ? <Button size="small" icon={<FileImageOutlined />} onClick={() => setPreviewReceipt(r.receiptPhoto)}>View</Button>
-        : <Tag color="default">None</Tag>,
+        : <span className="rd-badge rd-b-rejected">None</span>,
     },
     { title: 'Date', dataIndex: 'createdAt', key: 'date', render: (v: string) => new Date(v).toLocaleDateString() },
   ]
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={4} style={{ color: '#fff', margin: 0 }}>Fuel Log</Title>
-        <Button type="primary" icon={<PlusOutlined />} style={{ background: '#f97316', border: 'none' }} onClick={() => setOpen(true)}>
+      <div className="rd-row-between">
+        <div className="rd-page-title" style={{ margin: 0 }}>Fuel Log</div>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpen(true)}>
           Add Entry
         </Button>
       </div>
 
-      <Card style={{ borderRadius: 12, border: '1px solid #2a2a3f', background: '#1e1e2e' }}>
-        <Table dataSource={data} columns={columns} rowKey="id" size="middle" loading={loading} />
+      <Card>
+        <Table dataSource={data} columns={columns} rowKey="id" size="middle" loading={loading} scroll={{ x: 'max-content' }} />
       </Card>
 
       {/* Add Entry Modal */}
@@ -131,7 +129,7 @@ export default function FuelLog() {
               </div>
             )}
           </Form.Item>
-          <Button htmlType="submit" type="primary" block loading={submitting} style={{ background: '#f97316', border: 'none', height: 42 }}>
+          <Button htmlType="submit" type="primary" block loading={submitting} style={{ height: 42 }}>
             Submit
           </Button>
         </Form>

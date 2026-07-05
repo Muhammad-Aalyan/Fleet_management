@@ -1,14 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Table, Tag, Button, Space, Input, Card, Modal, Descriptions, Typography, Form, Select, InputNumber, message, Spin, Tooltip } from 'antd'
+import { Table, Button, Space, Input, Card, Modal, Descriptions, Form, Select, InputNumber, message, Spin, Tooltip } from 'antd'
 import { SearchOutlined, EyeOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons'
 import api from '../api/axios'
+import RdBadge from '../components/Badge'
 
-const { Title } = Typography
 const { Option } = Select
-
-const statusColors: Record<string, string> = {
-  AVAILABLE: 'green', IN_RIDE: 'blue', MAINTENANCE: 'orange', INACTIVE: 'default',
-}
 
 interface Vehicle {
   id: number
@@ -72,7 +68,7 @@ export default function Vehicles() {
   )
 
   const columns = [
-    { title: 'Vehicle No', dataIndex: 'vehicleNumber', key: 'vehicleNumber', render: (v: string) => <strong>{v}</strong> },
+    { title: 'Vehicle No', dataIndex: 'vehicleNumber', key: 'vehicleNumber', render: (v: string) => <span className="rd-cell-strong">{v}</span> },
     { title: 'Model', dataIndex: 'model', key: 'model' },
     { title: 'Year', dataIndex: 'year', key: 'year', width: 70 },
     { title: 'Capacity', dataIndex: 'capacity', key: 'capacity', render: (c: number) => `${c} seats`, width: 90 },
@@ -80,7 +76,7 @@ export default function Vehicles() {
     { title: 'Mileage (km)', dataIndex: 'currentMileage', key: 'currentMileage', render: (m: number) => m?.toLocaleString() ?? 0 },
     {
       title: 'Status', dataIndex: 'status', key: 'status',
-      render: (s: string) => <Tag color={statusColors[s]}>{s?.replace('_', ' ')}</Tag>,
+      render: (s: string) => <RdBadge status={s} label={s?.replace('_', ' ')} />,
     },
     {
       title: 'Actions', key: 'actions', width: 80,
@@ -94,23 +90,23 @@ export default function Vehicles() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0 }}>Vehicles</Title>
+      <div className="rd-row-between">
+        <div className="rd-page-title" style={{ margin: 0 }}>Vehicles</div>
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={fetchVehicles}>Refresh</Button>
+          <Button icon={<ReloadOutlined />} onClick={fetchVehicles} style={{ background: '#0C0D10', borderColor: '#0C0D10', color: '#fff' }}>Refresh</Button>
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddOpen(true)}>Add Vehicle</Button>
         </Space>
       </div>
 
-      <Card style={{ borderRadius: 12, marginBottom: 16 }}>
+      <Card style={{ marginBottom: 16 }}>
         <Input placeholder="Search by number or model..." prefix={<SearchOutlined />}
           value={search} onChange={e => setSearch(e.target.value)} style={{ width: 300 }} />
       </Card>
 
-      <Card style={{ borderRadius: 12 }}>
+      <Card>
         <Spin spinning={loading}>
           <Table dataSource={filtered} columns={columns} rowKey="id" size="middle"
-            pagination={{ pageSize: 10, showTotal: t => `${t} vehicles` }} />
+            pagination={{ pageSize: 10, showTotal: t => `${t} vehicles` }} scroll={{ x: 'max-content' }} />
         </Spin>
       </Card>
 
@@ -125,7 +121,7 @@ export default function Vehicles() {
             <Descriptions.Item label="Fuel Type">{detailVehicle.fuelType}</Descriptions.Item>
             <Descriptions.Item label="Current Mileage">{detailVehicle.currentMileage?.toLocaleString()} km</Descriptions.Item>
             <Descriptions.Item label="Status">
-              <Tag color={statusColors[detailVehicle.status]}>{detailVehicle.status?.replace('_', ' ')}</Tag>
+              <RdBadge status={detailVehicle.status} label={detailVehicle.status?.replace('_', ' ')} />
             </Descriptions.Item>
           </Descriptions>
         )}

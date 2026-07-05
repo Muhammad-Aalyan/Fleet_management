@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react'
-import { Table, Tag, Card, Button, Modal, Form, Input, Select, Typography, Spin, Descriptions, message, Badge } from 'antd'
+import { Table, Card, Button, Modal, Form, Input, Select, Typography, Spin, Descriptions, message, Badge } from 'antd'
 import { CheckOutlined, EyeOutlined } from '@ant-design/icons'
 import api from '../api/axios'
+import RdBadge from '../components/Badge'
 
-const { Title, Text } = Typography
+const { Text } = Typography
 const { TextArea } = Input
 
-const statusColor: Record<string, string> = { PENDING: 'gold', APPROVED: 'green', REJECTED: 'red' }
+const claimBadge = (status: string) => {
+  if (status === 'APPROVED') return <RdBadge status="COMPLETED" label="Approved" />
+  if (status === 'REJECTED') return <RdBadge status="REJECTED" label="Rejected" />
+  return <RdBadge status="PENDING" label="Pending" />
+}
 
 interface Claim {
   id: number; description: string; workDone: string; amountPaid: number
@@ -55,25 +60,24 @@ export default function DriverReimbursements() {
       title: 'Driver', key: 'driver',
       render: (_: any, r: Claim) => (
         <div>
-          <div style={{ fontWeight: 600 }}>{r.driver?.name}</div>
-          <div style={{ fontSize: 12, color: '#6b7280' }}>{r.driver?.user?.email}</div>
+          <div className="rd-cell-strong">{r.driver?.name}</div>
+          <div className="rd-cell-sub">{r.driver?.user?.email}</div>
         </div>
       ),
     },
     { title: 'Description', dataIndex: 'description', key: 'desc' },
     { title: 'Work Done', dataIndex: 'workDone', key: 'work' },
-    { title: 'Amount Paid (PKR)', dataIndex: 'amountPaid', key: 'amount', render: (v: number) => <Text strong style={{ color: '#fa541c' }}>PKR {Number(v).toLocaleString()}</Text> },
-    { title: 'Status', dataIndex: 'status', key: 'status', render: (s: string) => <Tag color={statusColor[s]}>{s}</Tag> },
+    { title: 'Amount Paid (PKR)', dataIndex: 'amountPaid', key: 'amount', render: (v: number) => <span className="rd-amount-red">PKR {Number(v).toLocaleString()}</span> },
+    { title: 'Status', dataIndex: 'status', key: 'status', render: (s: string) => claimBadge(s) },
     { title: 'Date', dataIndex: 'createdAt', key: 'date', render: (v: string) => new Date(v).toLocaleDateString() },
     {
       title: 'Actions', key: 'actions',
       render: (_: any, r: Claim) => (
         <div style={{ display: 'flex', gap: 6 }}>
           <Button size="small" icon={<EyeOutlined />} onClick={() => setViewModal(r)} />
-          {r.receiptPhoto && <Button size="small" onClick={() => viewReceipt(r.id)}>Receipt</Button>}
+          {r.receiptPhoto && <button className="rd-link-btn" onClick={() => viewReceipt(r.id)}>Receipt</button>}
           {r.status === 'PENDING' && (
             <Button size="small" type="primary" icon={<CheckOutlined />}
-              style={{ background: '#16a34a', borderColor: '#16a34a' }}
               onClick={() => { setReviewModal(r); form.resetFields() }}>
               Review
             </Button>
@@ -86,12 +90,12 @@ export default function DriverReimbursements() {
   return (
     <Spin spinning={loading}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0 }}>Driver Reimbursements</Title>
-        {pending > 0 && <Badge count={pending} style={{ background: '#f97316' }} />}
+        <div className="rd-page-title" style={{ margin: 0 }}>Driver Reimbursements</div>
+        {pending > 0 && <Badge count={pending} color="#E01E2B" />}
       </div>
 
-      <Card style={{ borderRadius: 12 }}>
-        <Table dataSource={data} columns={columns} rowKey="id" size="middle" />
+      <Card>
+        <Table dataSource={data} columns={columns} rowKey="id" size="middle" scroll={{ x: 'max-content' }} />
       </Card>
 
       {/* Detail Modal */}
@@ -103,7 +107,7 @@ export default function DriverReimbursements() {
             <Descriptions.Item label="Description">{viewModal.description}</Descriptions.Item>
             <Descriptions.Item label="Work Done">{viewModal.workDone}</Descriptions.Item>
             <Descriptions.Item label="Amount Paid">PKR {Number(viewModal.amountPaid).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="Status"><Tag color={statusColor[viewModal.status]}>{viewModal.status}</Tag></Descriptions.Item>
+            <Descriptions.Item label="Status">{claimBadge(viewModal.status)}</Descriptions.Item>
             {viewModal.adminNote && <Descriptions.Item label="Admin Note">{viewModal.adminNote}</Descriptions.Item>}
             <Descriptions.Item label="Submitted">{new Date(viewModal.createdAt).toLocaleString()}</Descriptions.Item>
           </Descriptions>

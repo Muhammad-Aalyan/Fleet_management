@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react'
 import {
   Table, Tag, Button, Input, Card, Modal, Form, Descriptions,
-  Avatar, Typography, Spin, Select, DatePicker, message, Popconfirm,
+  Typography, Spin, Select, DatePicker, message,
 } from 'antd'
-import { SearchOutlined, EyeOutlined, PlusOutlined, UserOutlined, EditOutlined } from '@ant-design/icons'
+import { SearchOutlined, EyeOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons'
 import api from '../api/axios'
+import RdBadge from '../components/Badge'
 
-const { Title, Text } = Typography
-
-const statusColors: Record<string, string> = { AVAILABLE: 'green', ON_RIDE: 'blue', OFF_DUTY: 'default' }
+const { Text } = Typography
 
 interface Driver {
   id: number; name: string; phone: string; cnic: string
@@ -104,21 +103,21 @@ export default function Drivers() {
       title: 'Driver', key: 'driver',
       render: (_: any, r: Driver) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar icon={<UserOutlined />} style={{ background: '#1677ff', flexShrink: 0 }} />
+          <div className="rd-avatar" style={{ width: 32, height: 32, fontSize: 12 }}>{r.name.charAt(0).toUpperCase()}</div>
           <div>
-            <div style={{ fontWeight: 600 }}>{r.name}</div>
-            <div style={{ fontSize: 12, color: '#6b7280' }}>{r.user?.email}</div>
+            <div className="rd-cell-strong">{r.name}</div>
+            <div className="rd-cell-sub">{r.user?.email}</div>
           </div>
         </div>
       ),
     },
-    { title: 'CNIC', dataIndex: 'cnic', key: 'cnic' },
+    { title: 'CNIC', dataIndex: 'cnic', key: 'cnic', render: (v: string) => v === 'PENDING' ? <RdBadge status="PENDING" /> : v },
     { title: 'Phone', dataIndex: 'phone', key: 'phone' },
-    { title: 'License No', dataIndex: 'licenseNumber', key: 'license' },
+    { title: 'License No', dataIndex: 'licenseNumber', key: 'license', render: (v: string) => v === 'PENDING' ? <RdBadge status="PENDING" /> : v },
     {
       title: 'Expiry', dataIndex: 'licenseExpiry', key: 'expiry',
       render: (v: string) => (
-        <span style={{ color: isExpired(v) ? '#ef4444' : '#374151' }}>
+        <span style={{ color: isExpired(v) ? '#A3141D' : undefined }}>
           {new Date(v).toLocaleDateString()}
           {isExpired(v) && <Tag color="red" style={{ marginLeft: 6, fontSize: 10 }}>Expired</Tag>}
         </span>
@@ -127,12 +126,12 @@ export default function Drivers() {
     {
       title: 'Vehicle', key: 'vehicle',
       render: (_: any, r: Driver) => r.vehicle
-        ? <Tag color="blue">{r.vehicle.vehicleNumber}</Tag>
+        ? <span className="rd-name-pill">{r.vehicle.vehicleNumber}</span>
         : <Text type="secondary">—</Text>,
     },
     {
       title: 'Status', dataIndex: 'status', key: 'status',
-      render: (s: string) => <Tag color={statusColors[s] ?? 'default'}>{s.replace('_', ' ')}</Tag>,
+      render: (s: string) => <RdBadge status={s} label={s.replace('_', ' ')} />,
     },
     {
       title: 'Actions', key: 'actions',
@@ -183,14 +182,14 @@ export default function Drivers() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <Title level={4} style={{ margin: 0 }}>Drivers</Title>
+      <div className="rd-row-between">
+        <div className="rd-page-title" style={{ margin: 0 }}>Drivers</div>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => setAddOpen(true)}>
           Add Driver
         </Button>
       </div>
 
-      <Card style={{ borderRadius: 12, marginBottom: 16 }}>
+      <Card style={{ marginBottom: 16 }}>
         <Input
           placeholder="Search by name, CNIC or email..."
           prefix={<SearchOutlined />}
@@ -200,9 +199,9 @@ export default function Drivers() {
         />
       </Card>
 
-      <Card style={{ borderRadius: 12 }}>
+      <Card>
         <Spin spinning={loading}>
-          <Table dataSource={filtered} columns={columns} rowKey="id" size="middle" />
+          <Table dataSource={filtered} columns={columns} rowKey="id" size="middle" scroll={{ x: 'max-content' }} />
         </Spin>
       </Card>
 
@@ -211,11 +210,11 @@ export default function Drivers() {
         {viewDriver && (
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20, padding: '16px 0', borderBottom: '1px solid #f0f0f0' }}>
-              <Avatar size={56} icon={<UserOutlined />} style={{ background: '#1677ff' }} />
+              <div className="rd-avatar" style={{ width: 56, height: 56, fontSize: 20 }}>{viewDriver.name.charAt(0).toUpperCase()}</div>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 17 }}>{viewDriver.name}</div>
                 <div style={{ color: '#6b7280', fontSize: 13 }}>{viewDriver.user?.email}</div>
-                <Tag color={statusColors[viewDriver.status]} style={{ marginTop: 4 }}>{viewDriver.status.replace('_', ' ')}</Tag>
+                <div style={{ marginTop: 4 }}><RdBadge status={viewDriver.status} label={viewDriver.status.replace('_', ' ')} /></div>
               </div>
             </div>
             <Descriptions bordered column={1} size="small">

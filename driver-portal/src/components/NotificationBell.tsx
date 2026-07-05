@@ -72,18 +72,18 @@ export default function NotificationBell() {
 
   const content = (
     <div style={{ width: 340, margin: '-12px -16px' }}>
-      <div style={{ padding: '14px 16px', borderBottom: '1px solid #2a2a3f', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <span style={{ color: '#f9fafb', fontWeight: 700, fontSize: 15 }}>Notifications</span>
+          <span style={{ color: '#111827', fontWeight: 700, fontSize: 15 }}>Notifications</span>
           {unreadCount > 0 && (
-            <span style={{ marginLeft: 8, background: '#f97316', color: '#fff', borderRadius: 10, padding: '1px 8px', fontSize: 11, fontWeight: 700 }}>
+            <span style={{ marginLeft: 8, background: '#E01E2B', color: '#fff', borderRadius: 10, padding: '1px 8px', fontSize: 11, fontWeight: 700 }}>
               {unreadCount} new
             </span>
           )}
         </div>
         {unreadCount > 0 && (
           <Button type="text" size="small" icon={<CheckOutlined />}
-            style={{ color: '#f97316', fontSize: 12 }} onClick={markAllRead}>
+            style={{ color: '#E01E2B', fontSize: 12 }} onClick={markAllRead}>
             Mark all read
           </Button>
         )}
@@ -92,8 +92,7 @@ export default function NotificationBell() {
       <div style={{ maxHeight: 380, overflowY: 'auto' }}>
         <Spin spinning={loading}>
           {notifications.length === 0 && !loading ? (
-            <Empty description={<span style={{ color: '#6b7280' }}>No notifications yet</span>}
-              image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ padding: '32px 0' }} />
+            <Empty description="No notifications yet" image={Empty.PRESENTED_IMAGE_SIMPLE} style={{ padding: '32px 0' }} />
           ) : (
             notifications.map(n => (
               <div
@@ -102,20 +101,20 @@ export default function NotificationBell() {
                 style={{
                   padding: '12px 16px',
                   cursor: 'pointer',
-                  background: n.isRead ? 'transparent' : 'rgba(249,115,22,0.08)',
-                  borderBottom: '1px solid #2a2a3f',
-                  borderLeft: n.isRead ? '3px solid transparent' : '3px solid #f97316',
+                  background: n.isRead ? 'transparent' : '#FDEAEB',
+                  borderBottom: '1px solid #f3f4f6',
+                  borderLeft: n.isRead ? '3px solid transparent' : '3px solid #E01E2B',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(249,115,22,0.15)')}
-                onMouseLeave={e => (e.currentTarget.style.background = n.isRead ? 'transparent' : 'rgba(249,115,22,0.08)')}
+                onMouseEnter={e => (e.currentTarget.style.background = '#FBD5D8')}
+                onMouseLeave={e => (e.currentTarget.style.background = n.isRead ? 'transparent' : '#FDEAEB')}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ color: '#f9fafb', fontWeight: n.isRead ? 400 : 700, fontSize: 13 }}>{n.title}</Text>
-                  <Text style={{ color: '#6b7280', fontSize: 11, whiteSpace: 'nowrap', marginLeft: 8 }}>{timeAgo(n.createdAt)}</Text>
+                  <Text style={{ color: '#111827', fontWeight: n.isRead ? 400 : 700, fontSize: 13 }}>{n.title}</Text>
+                  <Text style={{ color: '#9ca3af', fontSize: 11, whiteSpace: 'nowrap', marginLeft: 8 }}>{timeAgo(n.createdAt)}</Text>
                 </div>
-                <Text style={{ color: '#9ca3af', fontSize: 12, lineHeight: 1.4, display: 'block' }}>{n.message}</Text>
+                <Text style={{ color: '#6b7280', fontSize: 12, lineHeight: 1.4, display: 'block' }}>{n.message}</Text>
                 {!n.isRead && (
-                  <Text style={{ color: '#f97316', fontSize: 11, fontWeight: 600, marginTop: 4, display: 'block' }}>
+                  <Text style={{ color: '#E01E2B', fontSize: 11, fontWeight: 600, marginTop: 4, display: 'block' }}>
                     {n.title.toLowerCase().includes('reimbursement') ? 'Click to view → Reimbursement' : 'Click to view → My Rides'}
                   </Text>
                 )}
@@ -135,12 +134,12 @@ export default function NotificationBell() {
       open={open}
       onOpenChange={(v) => { setOpen(v); if (v) fetchNotifications() }}
       overlayStyle={{ padding: 0 }}
-      overlayInnerStyle={{ padding: '12px 16px', borderRadius: 12, overflow: 'hidden', background: '#1e1e2e', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
+      overlayInnerStyle={{ padding: '12px 16px', borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }}
     >
-      <Badge count={unreadCount} size="small" offset={[-2, 2]}>
+      <Badge count={unreadCount} size="small" offset={[-2, 2]} color="#E01E2B">
         <Button
           type="text"
-          icon={<BellOutlined style={{ fontSize: 20, color: unreadCount > 0 ? '#f97316' : '#fff' }} />}
+          icon={<BellOutlined style={{ fontSize: 20, color: unreadCount > 0 ? '#E01E2B' : '#6A6D76' }} />}
           shape="circle"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         />

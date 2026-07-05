@@ -1,13 +1,16 @@
 import { useEffect, useState, useRef } from 'react'
-import { Card, Button, Form, Input, InputNumber, Table, Tag, Typography, Modal, message, Spin, Descriptions } from 'antd'
+import { Card, Button, Form, Input, InputNumber, Table, Modal, message, Spin, Descriptions } from 'antd'
 import { PlusOutlined, UploadOutlined, EyeOutlined, WalletOutlined } from '@ant-design/icons'
 import api from '../api/axios'
+import RdBadge from '../components/Badge'
 
-const { Title, Text } = Typography
 const { TextArea } = Input
 
-const statusColor: Record<string, string> = { PENDING: 'gold', APPROVED: 'green', REJECTED: 'red' }
-const statusIcon: Record<string, string> = { PENDING: '⏳', APPROVED: '✅', REJECTED: '❌' }
+const claimBadge = (status: string) => {
+  if (status === 'APPROVED') return <RdBadge status="COMPLETED" label="✅ Approved" />
+  if (status === 'REJECTED') return <RdBadge status="REJECTED" label="✕ Rejected" />
+  return <RdBadge status="PENDING" label="⏳ Pending" />
+}
 
 interface Claim {
   id: number; description: string; workDone: string; amountPaid: number
@@ -57,10 +60,10 @@ export default function Reimbursement() {
   const columns = [
     { title: 'Description', dataIndex: 'description', key: 'desc' },
     { title: 'Work Done', dataIndex: 'workDone', key: 'work' },
-    { title: 'Amount (PKR)', dataIndex: 'amountPaid', key: 'amount', render: (v: number) => <Text style={{ color: '#f97316', fontWeight: 600 }}>PKR {Number(v).toLocaleString()}</Text> },
+    { title: 'Amount (PKR)', dataIndex: 'amountPaid', key: 'amount', render: (v: number) => <span className="rd-cell-strong" style={{ color: 'var(--rd-red)' }}>PKR {Number(v).toLocaleString()}</span> },
     {
       title: 'Status', dataIndex: 'status', key: 'status',
-      render: (s: string) => <Tag color={statusColor[s]}>{statusIcon[s]} {s}</Tag>,
+      render: (s: string) => claimBadge(s),
     },
     { title: 'Date', dataIndex: 'createdAt', key: 'date', render: (v: string) => new Date(v).toLocaleDateString() },
     {
@@ -76,28 +79,26 @@ export default function Reimbursement() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="rd-row-between">
         <div>
-          <Title level={4} style={{ color: '#fff', margin: 0 }}>Reimbursement Claims</Title>
-          <Text style={{ color: '#6b7280', fontSize: 13 }}>Submit toll, maintenance, and other work-related expenses</Text>
+          <div className="rd-page-title" style={{ margin: '0 0 4px' }}>Reimbursement Claims</div>
+          <div className="rd-page-sub" style={{ margin: 0 }}>Submit toll, maintenance, and other work-related expenses</div>
         </div>
-        <Button type="primary" icon={<PlusOutlined />}
-          style={{ background: '#f97316', border: 'none' }}
-          onClick={() => setModalOpen(true)}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
           New Claim
         </Button>
       </div>
 
       <Spin spinning={loading}>
-        <Card style={{ borderRadius: 12, border: '1px solid #2a2a3f', background: '#1e1e2e' }}>
+        <Card>
           <Table dataSource={data} columns={columns} rowKey="id" size="middle"
-            locale={{ emptyText: 'No claims submitted yet.' }} />
+            locale={{ emptyText: 'No claims submitted yet.' }} scroll={{ x: 'max-content' }} />
         </Card>
       </Spin>
 
       {/* Submit Modal */}
       <Modal
-        title={<span><WalletOutlined style={{ color: '#f97316', marginRight: 8 }} />New Reimbursement Claim</span>}
+        title={<span><WalletOutlined style={{ color: '#E01E2B', marginRight: 8 }} />New Reimbursement Claim</span>}
         open={modalOpen}
         onCancel={() => { setModalOpen(false); form.resetFields(); setReceiptBase64(null) }}
         footer={null}
@@ -125,7 +126,7 @@ export default function Reimbursement() {
             )}
           </Form.Item>
           <Button htmlType="submit" type="primary" block loading={submitting}
-            style={{ background: '#f97316', border: 'none', height: 42, fontWeight: 600 }}>
+            style={{ height: 42, fontWeight: 600 }}>
             Submit Claim
           </Button>
         </Form>
@@ -138,8 +139,8 @@ export default function Reimbursement() {
             <Descriptions.Item label="Description">{viewClaim.description}</Descriptions.Item>
             <Descriptions.Item label="Work Done">{viewClaim.workDone}</Descriptions.Item>
             <Descriptions.Item label="Amount Paid">PKR {Number(viewClaim.amountPaid).toLocaleString()}</Descriptions.Item>
-            <Descriptions.Item label="Status"><Tag color={statusColor[viewClaim.status]}>{statusIcon[viewClaim.status]} {viewClaim.status}</Tag></Descriptions.Item>
-            {viewClaim.adminNote && <Descriptions.Item label="Admin Note" labelStyle={{ color: '#1677ff' }}>{viewClaim.adminNote}</Descriptions.Item>}
+            <Descriptions.Item label="Status">{claimBadge(viewClaim.status)}</Descriptions.Item>
+            {viewClaim.adminNote && <Descriptions.Item label="Admin Note" labelStyle={{ color: '#E01E2B' }}>{viewClaim.adminNote}</Descriptions.Item>}
             <Descriptions.Item label="Submitted">{new Date(viewClaim.createdAt).toLocaleString()}</Descriptions.Item>
           </Descriptions>
         )}

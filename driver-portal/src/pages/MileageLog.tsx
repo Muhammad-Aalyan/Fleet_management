@@ -1,9 +1,7 @@
-import { Table, Card, Typography, message, Spin, Tag, Button, Modal, Form, InputNumber, Select } from 'antd'
+import { Table, Card, message, Spin, Button, Modal, Form, InputNumber, Select } from 'antd'
 import { useEffect, useState, useCallback } from 'react'
-import { ArrowRightOutlined, TeamOutlined, UserOutlined, PlusOutlined, DashboardOutlined } from '@ant-design/icons'
+import { PlusOutlined, DashboardOutlined } from '@ant-design/icons'
 import api from '../api/axios'
-
-const { Title, Text } = Typography
 
 const MANUAL_REASONS = [
   { value: 'OFFICE_WORK',  label: 'Office Work' },
@@ -70,36 +68,35 @@ export default function MileageLog() {
         if (r.isManual || r.pickupLocation === 'Others') {
           return (
             <div>
-              <Tag color="purple">Others</Tag>
-              {r.reason && <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>{reasonLabel(r.reason)}</div>}
+              <span className="rd-badge rd-b-merged">Others</span>
+              {r.reason && <div className="rd-cell-sub" style={{ marginTop: 4 }}>{reasonLabel(r.reason)}</div>}
             </div>
           )
         }
         return r.pickupLocation ? (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <strong>{r.pickupLocation}</strong>
-            <ArrowRightOutlined style={{ color: '#f97316', fontSize: 11 }} />
-            <strong>{r.dropLocation}</strong>
+          <span className="rd-cell-strong" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            {r.pickupLocation}
+            <span style={{ color: 'var(--rd-red)' }}>→</span>
+            {r.dropLocation}
           </span>
-        ) : <Text type="secondary">—</Text>
+        ) : <span className="rd-cell-sub">—</span>
       },
     },
     {
       title: 'Driver / Customer(s)',
       key: 'customers',
       render: (_: any, r: MileageEntry) => {
-        if (!r.customers || r.customers.length === 0) return <Text type="secondary">—</Text>
+        if (!r.customers || r.customers.length === 0) return <span className="rd-cell-sub">—</span>
         const isManual = r.isManual || r.pickupLocation === 'Others'
         const shared = !isManual && r.customers.length > 1
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {shared && <Tag color="orange" icon={<TeamOutlined />} style={{ marginBottom: 4, width: 'fit-content' }}>Shared Ride</Tag>}
-            {isManual && <Tag color="purple" style={{ marginBottom: 4, width: 'fit-content' }}>Driver Entry</Tag>}
+            {shared && <span className="rd-badge rd-b-shared" style={{ marginBottom: 4, width: 'fit-content' }}>Shared Ride</span>}
+            {isManual && <span className="rd-badge rd-b-merged" style={{ marginBottom: 4, width: 'fit-content' }}>Driver Entry</span>}
             {r.customers.map((c, i) => (
-              <span key={i} style={{ fontSize: 13 }}>
-                <UserOutlined style={{ marginRight: 4, color: '#9ca3af' }} />
-                {c.name}
-                {c.passengers !== null && <Text type="secondary"> ({c.passengers} pax)</Text>}
+              <span key={i} className="rd-driver-line">
+                👤 {c.name}
+                {c.passengers !== null && <span className="rd-cell-sub"> ({c.passengers} pax)</span>}
               </span>
             ))}
           </div>
@@ -117,7 +114,7 @@ export default function MileageLog() {
       dataIndex: 'endMileage',
       key: 'end',
       render: (v: number, r: MileageEntry) => v === r.startMileage
-        ? <Text type="secondary">Pending</Text>
+        ? <span className="rd-cell-sub">Pending</span>
         : v.toLocaleString(),
     },
     {
@@ -125,7 +122,7 @@ export default function MileageLog() {
       key: 'distance',
       render: (_: any, r: MileageEntry) => {
         const d = r.endMileage - r.startMileage
-        return d > 0 ? <Tag color="green">{d.toLocaleString()} km</Tag> : <Text type="secondary">—</Text>
+        return d > 0 ? <span className="rd-badge rd-b-distance">{d.toLocaleString()} km</span> : <span className="rd-cell-sub">—</span>
       },
     },
     {
@@ -137,20 +134,18 @@ export default function MileageLog() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div className="rd-row-between">
         <div>
-          <Title level={4} style={{ color: '#fff', margin: 0 }}>Mileage Log</Title>
-          <Text style={{ color: '#6b7280', fontSize: 13 }}>Ride mileage auto-logged · Add manual entries for other trips</Text>
+          <div className="rd-page-title" style={{ margin: '0 0 4px' }}>Mileage Log</div>
+          <div className="rd-page-sub" style={{ margin: 0 }}>Ride mileage auto-logged · Add manual entries for other trips</div>
         </div>
-        <Button type="primary" icon={<PlusOutlined />}
-          style={{ background: '#f97316', border: 'none' }}
-          onClick={() => setModalOpen(true)}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
           Add Entry
         </Button>
       </div>
 
       <Spin spinning={loading}>
-        <Card style={{ borderRadius: 12, border: '1px solid #2a2a3f', background: '#1e1e2e' }}>
+        <Card>
           <Table
             dataSource={data}
             columns={columns}
@@ -158,20 +153,21 @@ export default function MileageLog() {
             size="middle"
             pagination={{ pageSize: 10 }}
             locale={{ emptyText: 'No mileage entries yet.' }}
+            scroll={{ x: 'max-content' }}
           />
         </Card>
       </Spin>
 
       {/* Manual Entry Modal */}
       <Modal
-        title={<span><DashboardOutlined style={{ color: '#f97316', marginRight: 8 }} />Add Mileage Entry</span>}
+        title={<span><DashboardOutlined style={{ color: '#E01E2B', marginRight: 8 }} />Add Mileage Entry</span>}
         open={modalOpen}
         onCancel={() => { setModalOpen(false); form.resetFields() }}
         footer={null}
       >
-        <Text style={{ color: '#6b7280', fontSize: 13, display: 'block', marginBottom: 16 }}>
+        <p style={{ color: 'var(--rd-ink-soft)', fontSize: 13, marginBottom: 16 }}>
           Log mileage for trips taken outside of assigned rides (office runs, maintenance, etc.)
-        </Text>
+        </p>
         <Form form={form} layout="vertical" onFinish={handleAddEntry}>
           <Form.Item label="Reason for Trip" name="reason" rules={[{ required: true, message: 'Select a reason' }]}>
             <Select placeholder="Select reason" options={MANUAL_REASONS} />
@@ -183,7 +179,7 @@ export default function MileageLog() {
             <InputNumber min={0} style={{ width: '100%' }} addonAfter="km" placeholder="e.g. 45,350" />
           </Form.Item>
           <Button htmlType="submit" type="primary" block loading={submitting}
-            style={{ background: '#f97316', border: 'none', height: 42, fontWeight: 600 }}>
+            style={{ height: 42, fontWeight: 600 }}>
             Save Entry
           </Button>
         </Form>

@@ -12,6 +12,18 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "admin-portal", "run", "dev"],
       "port": 3004
+    },
+    {
+      "name": "driver-portal",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "driver-portal", "run", "dev"],
+      "port": 3005
+    },
+    {
+      "name": "customer-portal",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "customer-portal", "run", "dev"],
+      "port": 3006
     }
   ]
 }

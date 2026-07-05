@@ -73,18 +73,18 @@ export default function NotificationBell() {
   const content = (
     <div style={{ width: 340, margin: '-12px -16px' }}>
       {/* Header */}
-      <div style={{ padding: '14px 16px', borderBottom: '1px solid #ede9fe', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ padding: '14px 16px', borderBottom: '1px solid #E7E8EC', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <span style={{ color: '#1a1a2e', fontWeight: 700, fontSize: 15 }}>Notifications</span>
           {unreadCount > 0 && (
-            <span style={{ marginLeft: 8, background: '#7c3aed', color: '#fff', borderRadius: 10, padding: '1px 8px', fontSize: 11, fontWeight: 700 }}>
+            <span style={{ marginLeft: 8, background: '#E01E2B', color: '#fff', borderRadius: 10, padding: '1px 8px', fontSize: 11, fontWeight: 700 }}>
               {unreadCount} new
             </span>
           )}
         </div>
         {unreadCount > 0 && (
           <Button type="text" size="small" icon={<CheckOutlined />}
-            style={{ color: '#7c3aed', fontSize: 12 }} onClick={markAllRead}>
+            style={{ color: '#E01E2B', fontSize: 12 }} onClick={markAllRead}>
             Mark all read
           </Button>
         )}
@@ -103,12 +103,12 @@ export default function NotificationBell() {
                 style={{
                   padding: '12px 16px',
                   cursor: 'pointer',
-                  background: n.isRead ? 'transparent' : '#f5f3ff',
+                  background: n.isRead ? 'transparent' : '#FDEAEB',
                   borderBottom: '1px solid #f3f4f6',
-                  borderLeft: n.isRead ? '3px solid transparent' : '3px solid #7c3aed',
+                  borderLeft: n.isRead ? '3px solid transparent' : '3px solid #E01E2B',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#ede9fe')}
-                onMouseLeave={e => (e.currentTarget.style.background = n.isRead ? 'transparent' : '#f5f3ff')}
+                onMouseEnter={e => (e.currentTarget.style.background = '#FBD5D8')}
+                onMouseLeave={e => (e.currentTarget.style.background = n.isRead ? 'transparent' : '#FDEAEB')}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                   <Text style={{ color: '#1a1a2e', fontWeight: n.isRead ? 400 : 700, fontSize: 13 }}>{n.title}</Text>
@@ -116,7 +116,7 @@ export default function NotificationBell() {
                 </div>
                 <Text style={{ color: '#6b7280', fontSize: 12, lineHeight: 1.4, display: 'block' }}>{n.message}</Text>
                 {!n.isRead && (
-                  <Text style={{ color: '#7c3aed', fontSize: 11, fontWeight: 600, marginTop: 4, display: 'block' }}>
+                  <Text style={{ color: '#E01E2B', fontSize: 11, fontWeight: 600, marginTop: 4, display: 'block' }}>
                     {n.title.toLowerCase().includes('reimbursement') ? 'Click to view → Reimbursement' : 'Click to view → My Rides'}
                   </Text>
                 )}
@@ -136,12 +136,12 @@ export default function NotificationBell() {
       open={open}
       onOpenChange={(v) => { setOpen(v); if (v) fetchNotifications() }}
       overlayStyle={{ padding: 0 }}
-      overlayInnerStyle={{ padding: '12px 16px', borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 32px rgba(124,58,237,0.12)' }}
+      overlayInnerStyle={{ padding: '12px 16px', borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }}
     >
-      <Badge count={unreadCount} size="small" offset={[-2, 2]}>
+      <Badge count={unreadCount} size="small" offset={[-2, 2]} color="#E01E2B">
         <Button
           type="text"
-          icon={<BellOutlined style={{ fontSize: 20, color: unreadCount > 0 ? '#7c3aed' : '#374151' }} />}
+          icon={<BellOutlined style={{ fontSize: 20, color: unreadCount > 0 ? '#E01E2B' : '#6A6D76' }} />}
           shape="circle"
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         />
