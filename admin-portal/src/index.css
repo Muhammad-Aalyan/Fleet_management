@@ -231,3 +231,105 @@ body {
 .ant-pagination .ant-pagination-item-active a{color:#fff !important;}
 .ant-modal-header{border-bottom:1px solid var(--rd-border) !important;}
 .ant-modal-content{border-radius:var(--rd-radius) !important;}
+
+/* ===== LOGIN / REGISTER PAGES ===== */
+.rd-login-page{
+  margin:0;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  overflow:hidden;
+  padding:40px 0;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(224,30,43,.20), transparent 42%),
+    radial-gradient(circle at 85% 82%, rgba(224,30,43,.14), transparent 45%),
+    linear-gradient(160deg, #0C0D10 0%, #17181D 45%, #0C0D10 100%);
+}
+.rd-login-road{
+  position:absolute;bottom:-4%;left:50%;
+  transform:translateX(-50%) perspective(600px) rotateX(55deg);
+  width:140%;height:340px;
+  background:repeating-linear-gradient(90deg, transparent 0 68px, rgba(255,255,255,.09) 68px 96px);
+  opacity:.5;pointer-events:none;
+}
+.rd-login-road::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg, rgba(12,13,16,0) 0%, #0C0D10 90%);}
+.rd-glow-ring{position:absolute;width:640px;height:640px;border-radius:50%;border:1px solid rgba(224,30,43,.18);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
+.rd-glow-ring.r2{width:820px;height:820px;border-color:rgba(224,30,43,.10);}
+
+.rd-login-card{
+  position:relative;z-index:2;background:#fff;border-radius:18px;
+  padding:44px 46px 40px;width:460px;max-width:92vw;
+  box-shadow:0 30px 70px rgba(0,0,0,.45), 0 4px 14px rgba(0,0,0,.25);
+  text-align:center;
+}
+.rd-login-card::before{
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:70%;height:4px;border-radius:0 0 6px 6px;
+  background:linear-gradient(90deg, var(--rd-red), var(--rd-red-dark));
+}
+.rd-login-logo{margin:4px 0 18px;}
+.rd-login-logo img{width:132px;height:auto;display:block;margin:0 auto;}
+.rd-login-card h1{font-size:21px;font-weight:800;margin:0 0 6px;letter-spacing:-.01em;color:var(--rd-ink);}
+.rd-login-card p.sub{margin:0 0 30px;color:var(--rd-ink-soft);font-size:13.5px;}
+
+.rd-login-field .ant-input-affix-wrapper,
+.rd-login-field .ant-input{
+  border:1px solid var(--rd-border) !important;border-radius:10px !important;
+  background:#FAFAFB !important;padding:11px 15px !important;font-size:14px;
+}
+.rd-login-field .ant-input-affix-wrapper:focus,
+.rd-login-field .ant-input-affix-wrapper-focused,
+.rd-login-field .ant-input:focus{
+  border-color:var(--rd-red) !important;background:#fff !important;box-shadow:none !important;
+}
+.rd-login-field .ant-input-prefix{color:var(--rd-ink-faint);margin-right:10px;}
+.rd-login-field{text-align:left;}
+
+.rd-row-opts{display:flex;justify-content:space-between;align-items:center;margin:2px 0 22px;font-size:12.5px;}
+.rd-row-opts label{display:flex;align-items:center;gap:7px;color:var(--rd-ink-soft);cursor:pointer;}
+.rd-row-opts a{color:var(--rd-red);font-weight:700;text-decoration:none;}
+
+.rd-btn-signin{
+  width:100%;padding:14px;border:none;border-radius:10px;
+  background:linear-gradient(135deg, var(--rd-red), var(--rd-red-dark));
+  color:#fff;font-size:15px;font-weight:800;letter-spacing:.01em;cursor:pointer;
+  box-shadow:0 10px 24px rgba(224,30,43,.35);
+  height:auto;
+}
+.rd-btn-signin:hover, .rd-btn-signin:focus{
+  background:linear-gradient(135deg, var(--rd-red), var(--rd-red-dark)) !important;
+  color:#fff !important;
+}
+
+.rd-login-foot{margin-top:26px;font-size:11px;letter-spacing:.1em;color:var(--rd-ink-faint);font-weight:700;text-transform:uppercase;}
+.rd-login-foot span{color:var(--rd-red);}
+
+.rd-login-divider{display:flex;align-items:center;text-align:center;margin:22px 0 14px;color:var(--rd-ink-faint);font-size:12.5px;}
+.rd-login-divider::before,.rd-login-divider::after{content:'';flex:1;height:1px;background:var(--rd-border);}
+.rd-login-divider span{padding:0 12px;white-space:nowrap;}
+.rd-btn-secondary{
+  width:100%;padding:13px;border-radius:10px;background:#fff;
+  border:1.5px solid var(--rd-red);color:var(--rd-red);font-size:14.5px;font-weight:800;cursor:pointer;
+  height:auto;
+}
+.rd-btn-secondary:hover, .rd-btn-secondary:focus{
+  border-color:var(--rd-red) !important;color:var(--rd-red) !important;background:#fff !important;
+}
+.rd-signin-line{margin-top:18px;font-size:13px;color:var(--rd-ink-soft);}
+.rd-signin-line a{color:var(--rd-red);font-weight:700;text-decoration:none;}
+
+/* OTP step */
+.rd-otp-field .ant-input{
+  text-align:center;font-size:24px;font-weight:800;letter-spacing:10px;
+  padding:12px 15px !important;
+}
+.rd-otp-hint{color:var(--rd-ink-soft);font-size:13px;margin:0 0 22px;}
+.rd-otp-hint strong{color:var(--rd-ink);}
+.rd-otp-resend{text-align:center;font-size:13px;color:var(--rd-ink-soft);margin-top:18px;}
+.rd-otp-resend button{background:none;border:none;color:var(--rd-red);font-weight:700;cursor:pointer;padding:0;font-size:13px;}
+.rd-otp-resend button:disabled{color:var(--rd-ink-faint);cursor:default;}
+.rd-otp-back{text-align:center;margin-top:10px;}
+.rd-otp-back button{background:none;border:none;color:var(--rd-ink-soft);font-size:12.5px;font-weight:600;cursor:pointer;padding:0;}
+.rd-otp-back button:hover{color:var(--rd-red);}

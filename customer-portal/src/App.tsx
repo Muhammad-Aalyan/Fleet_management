@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import MainLayout from './layouts/MainLayout'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import ForgotPassword from './pages/ForgotPassword'
 import Home from './pages/Home'
 import RequestRide from './pages/RequestRide'
 import MyRides from './pages/MyRides'
@@ -17,6 +18,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
             <Route index element={<Navigate to="/home" replace />} />
             <Route path="home" element={<Home />} />

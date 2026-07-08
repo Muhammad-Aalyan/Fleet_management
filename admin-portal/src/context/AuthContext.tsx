@@ -11,22 +11,22 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>(null!)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(localStorage.getItem('fleet_token'))
+  const [token, setToken] = useState<string | null>(sessionStorage.getItem('fleet_token'))
   const [user, setUser] = useState<User | null>(() => {
-    const u = localStorage.getItem('fleet_user')
+    const u = sessionStorage.getItem('fleet_user')
     return u ? JSON.parse(u) : null
   })
 
   const login = (t: string, u: User) => {
-    localStorage.setItem('fleet_token', t)
-    localStorage.setItem('fleet_user', JSON.stringify(u))
+    sessionStorage.setItem('fleet_token', t)
+    sessionStorage.setItem('fleet_user', JSON.stringify(u))
     setToken(t)
     setUser(u)
   }
 
   const logout = () => {
-    localStorage.removeItem('fleet_token')
-    localStorage.removeItem('fleet_user')
+    sessionStorage.removeItem('fleet_token')
+    sessionStorage.removeItem('fleet_user')
     setToken(null)
     setUser(null)
   }

@@ -1,8 +1,8 @@
 import { Navigate } from 'react-router-dom'
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const token = localStorage.getItem('fleet_token')
-  const user = JSON.parse(localStorage.getItem('fleet_user') || 'null')
+  const token = sessionStorage.getItem('fleet_token')
+  const user = JSON.parse(sessionStorage.getItem('fleet_user') || 'null')
   if (!token || user?.role !== 'ADMIN') return <Navigate to="/login" replace />
   return <>{children}</>
 }

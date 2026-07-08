@@ -19,9 +19,59 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  customer      Customer?
-  driver        Driver?
-  notifications Notification[]
+  customer       Customer?
+  driver         Driver?
+  notifications  Notification[]
+  loginOtps      LoginOtp[]
+  sessions       UserSession[]
+  passwordResets PasswordReset[]
+}
+
+// ─── Login OTP ───────────────────────────────────────────────────────────────
+// One-time codes emailed at sign-in time and verified before a session is issued.
+// purpose: LOGIN | RESET_PASSWORD
+
+model LoginOtp {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  email     String
+  otp       String
+  purpose   String   @default("LOGIN")
+  attempts  Int      @default(0)
+  verified  Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+}
+
+// ─── Password Reset ──────────────────────────────────────────────────────────
+// Short-lived token issued after a RESET_PASSWORD OTP is verified; authorizes
+// the immediate password change without re-sending the code.
+
+model PasswordReset {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
+}
+
+// ─── User Session ────────────────────────────────────────────────────────────
+// Server-tracked session backing each issued JWT; expires 20 minutes after sign-in.
+
+model UserSession {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  sessionId String   @unique
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: NoAction)
 }
 
 // ─── Customer ────────────────────────────────────────────────────────────────
