@@ -90,9 +90,7 @@ export default function ForgotPassword() {
 
   return (
     <div className="rd-login-page">
-      <div className="rd-glow-ring" />
-      <div className="rd-glow-ring r2" />
-      <div className="rd-login-road" />
+      <div className="rd-login-bg-logo" />
 
       <div className="rd-login-card">
         <div className="rd-login-logo"><img src="/logo-login.png" alt="Ride On" /></div>

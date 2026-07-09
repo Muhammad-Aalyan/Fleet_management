@@ -1,0 +1,14 @@
+{
+  "name": "mail-relay",
+  "version": "1.0.0",
+  "description": "Standalone SMTP relay service — sends email via Gmail SMTP, called over HTTP by the main backend.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "nodemailer": "^6.9.14",
+    "dotenv": "^16.4.5"
+  }
+}
